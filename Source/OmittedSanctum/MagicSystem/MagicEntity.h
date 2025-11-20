@@ -5,6 +5,7 @@
 #include "CoreMinimal.h"
 #include "GameFramework/Actor.h"
 #include "NiagaraSystem.h"
+#include "NiagaraComponent.h"
 #include "MagicEntity.generated.h"
 
 UENUM(BlueprintType)
@@ -25,7 +26,11 @@ enum EOSMagicResWeak
 	/*
 	* +/-50
 	*/
-	Great					UMETA(DisplayName = "Great")
+	Great					UMETA(DisplayName = "Great"),
+	/*
+	* 0
+	*/
+	Zero					UMETA(DisplayName = "Zero")
 };
 
 UENUM(BlueprintType)
@@ -129,6 +134,15 @@ public:
 	UPROPERTY(EditAnywhere, BlueprintReadWrite)
 	FOSMagicElement Element;
 
+	UPROPERTY(EditAnywhere, BlueprintReadWrite)
+	UNiagaraComponent* NiagaraComponent;
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite)
+	int Damage;
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite)
+	float EffectDuration;
+
 protected:
 	// Called when the game starts or when spawned
 	virtual void BeginPlay() override;
@@ -136,5 +150,8 @@ protected:
 public:	
 	// Called every frame
 	virtual void Tick(float DeltaTime) override;
+
+	UFUNCTION(BlueprintCallable)
+	void SetMagicElement(FOSMagicElement elem);
 
 };

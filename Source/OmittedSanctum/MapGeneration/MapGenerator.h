@@ -5,60 +5,103 @@
 #include "CoreMinimal.h"
 #include "GameFramework/Actor.h"
 #include "RoomStructures.h"
+#include "OSFloorConfig.h"
 #include "MapGenerator.generated.h"
 
+class ARoom;
+
+/**
+ * Structure to hold generation data before spawning actors
+ */
+struct FGeneratedRoomNode
+{
+	FRoomPosition Position;
+	FOSRoomData* RoomDataPtr; // Pointer to the row in the DataTable
+	FRotator SpawnRotation;   // The rotation needed for this room to fit
+	int32 PathDistanceFromStart; // Actual walking distance (Nodes traversed)
+
+	// To track which generic room we should swap for a special one (Key/Boss/Stairs)
+	bool bIsDeadEnd;
+
+	FGeneratedRoomNode()
+		: RoomDataPtr(nullptr)
+		, SpawnRotation(FRotator::ZeroRotator)
+		, PathDistanceFromStart(0)
+		, bIsDeadEnd(false)
+	{
+	}
+};
+
+/**
+ * Helper struct to return search results
+ */
+struct FRoomCandidateResult
+{
+	FOSRoomData* RoomData;
+	FRotator Rotation;
+	bool bIsValid;
+
+	FRoomCandidateResult() : RoomData(nullptr), Rotation(FRotator::ZeroRotator), bIsValid(false) {}
+};
+
 UCLASS()
-class OMITTEDSANCTUM_API AMapGenerator : public AActor
+class OMITTEDSANCTUM_API AOSMapGenerator : public AActor
 {
 	GENERATED_BODY()
-	
-public:	
-	// Sets default values for this actor's properties
-	AMapGenerator();
+
+public:
+	AOSMapGenerator();
+
+	/** The specific configuration for this run (Manor, Dungeon, etc.) */
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Generation")
+	UOSFloorConfig* CurrentFloorConfig;
+
+	/** Seed for RNG to share runs */
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Generation")
+	int32 RandomSeed;
+
+	/** Size of the tiles (e.g. 1000 units) to space them out correctly */
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Generation")
+	float TileSize = 1000.0f;
+
+	UFUNCTION(BlueprintCallable, Category = "Generation")
+	void GenerateDungeon();
+
+	UFUNCTION(BlueprintCallable, Category = "Generation")
+	void ClearDungeon();
 
 protected:
-	// Called when the game starts or when spawned
 	virtual void BeginPlay() override;
 
-public:	
-	// Called every frame
-	virtual void Tick(float DeltaTime) override;
-
-	UFUNCTION(BlueprintCallable)
-	void GenerateRoomLayout(const TArray<FOSRoomData>& AvailableRooms, int GridSize, bool bNeedsKeyRoom, bool gotBoss);
-
-	bool HasAvailablePath(const FRoomPosition& EntrancePos, const FRoomPosition& ExitPos, const FRoomPosition& KeyPos, int GridSize);
-
-	UPROPERTY(BlueprintReadWrite)
-	TArray<FOSRoomData> Grid;
-
-	UFUNCTION(BlueprintCallable)
-	static FRoomPosition IndexToRoomPosition(int idx, int GridSize) {
-		int x = idx % GridSize;
-		int y = idx / GridSize;
-		return FRoomPosition(x, y);
-	}
-
-	UFUNCTION(BlueprintCallable)
-	static int RoomPositionToIndex(FRoomPosition pos, int GridSize) {
-		int i = pos.Y * GridSize + pos.X;
-		return i;
-	}
-
-	UFUNCTION(BlueprintCallable)
-	bool EmptyPos(const FRoomPosition& NextPos, int GridSize)
-	{
-		FOSRoomData room = Grid[RoomPositionToIndex(NextPos, GridSize)];
-		return room.Types.Contains(FOSRoomType::Empty);
-	}
-
 private:
-	bool PlaceNextRoom(FRoomPosition Current, FRoomPosition Target, int GridSize, const TArray<FOSRoomData>& AvailableRooms, TSet<FRoomPosition>& Visited);
-	static bool IsWithinBounds(const FRoomPosition& Pos, int GridSize);
+	// Internal grid storage
+	TMap<uint32, FGeneratedRoomNode> RoomGrid;
 
-	TArray<FRoomPosition> NeighboursToVectors(const FOSRoomData& RoomData, FRoomPosition Current, int GridSize);
-	FOSRoomData GetRandomValidRoom(const TArray<FOSRoomData>& AvailableRooms, const FOSRoomData& CurrentRoom, const FRoomPosition& CurrentPos, const FRoomPosition& NextPos);
-	TArray<FOSRoomData> GetValidRooms(const TArray<FOSRoomData>& AvailableRooms, const FOSRoomData& CurrentRoom, const FRoomPosition& CurrentPos, const FRoomPosition& NextPos);
-	bool IsSpecial(const FOSRoomData& Chosen);
-	bool RoomIsNeighbour(const FRoomPosition& Pos1, const FRoomPosition& Pos2);
+	// Helper to retrieve data from the table
+	TArray<FOSRoomData*> GetAllRoomRows();
+
+	// Logic to find a room that fits a specific spot (Checks all rotations)
+	FRoomCandidateResult FindCompatibleRoom(const FRoomPosition& Pos, const TArray<FOSRoomData*>& AvailableRows);
+
+	// Check if specific connections fit at a specific position
+	bool DoConnectionsFit(const FRoomPosition& Pos, const FOSRoomPossibleNeighbour& Connections);
+
+	// Helper to rotate connections
+	FOSRoomPossibleNeighbour GetRotatedConnections(const FOSRoomPossibleNeighbour& Original, int32 RotationSteps);
+
+	// Calculate true walking distances using BFS
+	void CalculatePathDistances(const FRoomPosition& StartPos);
+
+	// Post-process: assign Keys, Bosses, and Exits based on GDD logic
+	void AssignSpecialRooms();
+
+	// Spawn the actual actors
+	void SpawnRoomActors();
+
+	// Random Stream for deterministic generation
+	FRandomStream RNG;
+
+	// Track spawned actors for cleanup
+	UPROPERTY()
+	TArray<AActor*> SpawnedRooms;
 };

@@ -3,6 +3,7 @@
 #pragma once
 
 #include "CoreMinimal.h"
+#include "Room.h"
 #include "RoomStructures.generated.h"
 
 
@@ -12,7 +13,7 @@ struct FOSRoomPossibleNeighbour
 	GENERATED_USTRUCT_BODY()
 
 public:
-	FOSRoomPossibleNeighbour() : West(true), East(true), South(true), North(true) {};
+	FOSRoomPossibleNeighbour() : West(false), East(false), South(false), North(false) {};
 	FOSRoomPossibleNeighbour(bool pos) : West(pos), East(pos), South(pos), North(pos) {};
 
 	/** Negative X	*/
@@ -23,11 +24,11 @@ public:
 	UPROPERTY(EditAnywhere, BlueprintReadWrite)
 	bool East;
 
-	/** Negative Y	*/
+	/** Positive Y	*/
 	UPROPERTY(EditAnywhere, BlueprintReadWrite)
 	bool South;
 
-	/** Positive Y	*/
+	/** Negative Y	*/
 	UPROPERTY(EditAnywhere, BlueprintReadWrite)
 	bool North;
 
@@ -67,22 +68,23 @@ struct OMITTEDSANCTUM_API FOSRoomData : public FTableRowBase
 	GENERATED_USTRUCT_BODY()
 
 public:
-	FOSRoomData() : Types({ FOSRoomType::Empty }), PossibleNeighbours() {};
+	/** The Blueprint of the room to spawn */
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Room")
+	TSubclassOf<ARoom> RoomClass;
 
-	UPROPERTY(EditAnywhere, BlueprintReadWrite)
-	TSubclassOf<AActor> Room;
+	/** Which openings does this room have? */
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Layout")
+	FOSRoomPossibleNeighbour Connections;
 
-	UPROPERTY(EditAnywhere, BlueprintReadWrite)
-	TArray<TEnumAsByte<FOSRoomType>> Types;
+	/** What type of room this is (Enemy, Puzzle, etc.) */
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Gameplay")
+	TArray<TEnumAsByte<FOSRoomType>> RoomTags;
 
-	UPROPERTY(EditAnywhere, BlueprintReadWrite)
-	FOSRoomPossibleNeighbour PossibleNeighbours;
-
-	UPROPERTY(EditAnywhere, BlueprintReadWrite)
-	UStaticMesh* MeshRoom;
-
-	UPROPERTY(EditAnywhere, BlueprintReadWrite)
-	UMaterial* Material;
+	/** * Difficulty weighting. 1.0 = Normal.
+	 * Higher values make it less likely to spawn on early floors.
+	 */
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Gameplay")
+	float Weight = 1.0f;
 
 };
 
@@ -102,8 +104,8 @@ public:
 	FRoomPosition() : X(-1), Y(-1) {};
 
 	bool operator==(const FRoomPosition& Other) const { return X == Other.X && Y == Other.Y; }
-	FRoomPosition operator-(const FRoomPosition& Other) { return FRoomPosition(X - Other.X, Y - Other.Y); }
-	FRoomPosition operator+(const FRoomPosition& Other) { return FRoomPosition(X + Other.X, Y + Other.Y); }
+	FRoomPosition operator-(const FRoomPosition& Other) const { return FRoomPosition(X - Other.X, Y - Other.Y); }
+	FRoomPosition operator+(const FRoomPosition& Other) const { return FRoomPosition(X + Other.X, Y + Other.Y); }
 };
 
 FORCEINLINE uint32 GetTypeHash(const FRoomPosition& Pos)

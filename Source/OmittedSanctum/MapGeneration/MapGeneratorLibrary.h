@@ -18,9 +18,6 @@ class OMITTEDSANCTUM_API UMapGeneratorLibrary : public UBlueprintFunctionLibrary
 public:
 
 	UFUNCTION(BlueprintCallable)
-	static bool HasNeededNeighbourAvailable(FOSRoomPossibleNeighbour Origin, FOSRoomPossibleNeighbour NewNeighbour, const FRoomPosition& OriginPos, const FRoomPosition& NeighbourPos);
-
-	UFUNCTION(BlueprintCallable)
 	static FOSRoomData GetRoomOfType(TArray<FOSRoomData> rooms, FOSRoomType RoomType);
 
 

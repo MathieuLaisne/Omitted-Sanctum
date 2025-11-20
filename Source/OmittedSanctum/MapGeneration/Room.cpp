@@ -10,10 +10,14 @@ ARoom::ARoom()
 	PrimaryActorTick.bCanEverTick = true;
 
 	USceneComponent* Root = CreateDefaultSubobject<USceneComponent>(TEXT("Root"));
-	RootComponent = Root;
 
 	MeshComponent = CreateDefaultSubobject<UStaticMeshComponent>(TEXT("RoomMesh"));
 	MeshComponent->SetupAttachment(Root);
+
+	PositionText = CreateDefaultSubobject<UTextRenderComponent>(TEXT("PositionText"));
+	PositionText->SetupAttachment(Root);
+
+	RootComponent = Root;
 }
 
 // Called when the game starts or when spawned
