@@ -20,6 +20,8 @@ public:
 	UFUNCTION(BlueprintCallable)
 	static FOSRoomData GetRoomOfType(TArray<FOSRoomData> rooms, FOSRoomType RoomType);
 
+	static TArray<FOSRoomData*> GetDeadEnds(TArray<FOSRoomData*> rooms);
+
 
 	UFUNCTION(BlueprintCallable)
 	static FString ToString(const FOSRoomData& roomData);

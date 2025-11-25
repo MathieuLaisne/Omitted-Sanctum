@@ -14,6 +14,17 @@ FOSRoomData UMapGeneratorLibrary::GetRoomOfType(TArray<FOSRoomData> rooms, FOSRo
 	return FOSRoomData();
 }
 
+TArray<FOSRoomData*> UMapGeneratorLibrary::GetDeadEnds(TArray<FOSRoomData*> rooms)
+{
+	TArray<FOSRoomData*> GoodRooms;
+	for (FOSRoomData* room : rooms)
+	{
+		if (room->Connections.West + room->Connections.East + room->Connections.North + room->Connections.South == 1)
+			GoodRooms.Add(room);
+	}
+	return GoodRooms;
+}
+
 FString UMapGeneratorLibrary::ToString(const FOSRoomData& roomData)
 {
 	FString string = "";

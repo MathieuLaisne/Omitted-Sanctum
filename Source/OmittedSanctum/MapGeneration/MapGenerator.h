@@ -6,9 +6,8 @@
 #include "GameFramework/Actor.h"
 #include "RoomStructures.h"
 #include "OSFloorConfig.h"
+#include "Room.h"
 #include "MapGenerator.generated.h"
-
-class ARoom;
 
 /**
  * Structure to hold generation data before spawning actors
@@ -81,7 +80,7 @@ private:
 	TArray<FOSRoomData*> GetAllRoomRows();
 
 	// Logic to find a room that fits a specific spot (Checks all rotations)
-	FRoomCandidateResult FindCompatibleRoom(const FRoomPosition& Pos, const TArray<FOSRoomData*>& AvailableRows);
+	FRoomCandidateResult FindCompatibleRoom(const FRoomPosition& Pos, const TArray<FOSRoomData*>& AvailableRows, bool bForceDeadEnd = false);
 
 	// Check if specific connections fit at a specific position
 	bool DoConnectionsFit(const FRoomPosition& Pos, const FOSRoomPossibleNeighbour& Connections);
@@ -98,10 +97,14 @@ private:
 	// Spawn the actual actors
 	void SpawnRoomActors();
 
+	int32 GetNeighborCount(const FRoomPosition& Pos);
+
+	void SealDungeon();
+
 	// Random Stream for deterministic generation
 	FRandomStream RNG;
 
 	// Track spawned actors for cleanup
 	UPROPERTY()
-	TArray<AActor*> SpawnedRooms;
+	TArray<ARoom*> SpawnedRooms;
 };

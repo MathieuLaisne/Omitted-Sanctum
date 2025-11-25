@@ -5,6 +5,7 @@
 #include "Engine/DataTable.h"
 #include "Kismet/KismetMathLibrary.h"
 #include "Containers/Queue.h"
+#include "MapGeneratorLibrary.h"
 
 AOSMapGenerator::AOSMapGenerator()
 {
@@ -54,15 +55,49 @@ void AOSMapGenerator::GenerateDungeon()
 	int32 CurrentRoomCount = 1;
 	int32 TargetCount = CurrentFloorConfig->DesiredRoomCount;
 
+	//QA
+	bool bGenerationSuccessful = false;
+
 	// Growth Loop
-	while (PendingPositions.Num() > 0 && CurrentRoomCount < TargetCount)
+	int32 MaxIterations = TargetCount * 10; // Safety break
+	int32 Iterations = 0;
+
+	while (PendingPositions.Num() > 0 && CurrentRoomCount < TargetCount && Iterations < MaxIterations &&  !bGenerationSuccessful)
 	{
-		int32 Index = RNG.RandRange(0, PendingPositions.Num() - 1);
-		FRoomPosition TargetPos = PendingPositions[Index];
-		PendingPositions.RemoveAt(Index);
+		Iterations++;
+
+		// Instead of purely random, we prefer positions with fewer neighbors.
+		// This encourages the dungeon to grow OUTWARDS (tendrils) rather than filling inward gaps.
+		int32 SelectedIndex = -1;
+		TArray<int32> OutwardGrowthIndices;
+
+		for (int32 i = 0; i < PendingPositions.Num(); i++)
+		{
+			// If a spot only has 1 neighbor, it's growing into empty space.
+			if (GetNeighborCount(PendingPositions[i]) <= 1)
+			{
+				OutwardGrowthIndices.Add(i);
+			}
+		}
+
+		// 70% chance to pick an outward node (creates gaps/corridors), 30% chance to fill a gap
+		if (OutwardGrowthIndices.Num() > 0 && RNG.FRand() < 0.7f)
+		{
+			SelectedIndex = OutwardGrowthIndices[RNG.RandRange(0, OutwardGrowthIndices.Num() - 1)];
+		}
+		else
+		{
+			SelectedIndex = RNG.RandRange(0, PendingPositions.Num() - 1);
+		}
+
+		FRoomPosition TargetPos = PendingPositions[SelectedIndex];
+
+		// Remove immediately so we don't process it twice
+		PendingPositions.RemoveAt(SelectedIndex);
 
 		if (RoomGrid.Contains(GetTypeHash(TargetPos))) continue;
 
+		// Find a room
 		FRoomCandidateResult Result = FindCompatibleRoom(TargetPos, AllRows);
 
 		if (Result.bIsValid)
@@ -80,23 +115,58 @@ void AOSMapGenerator::GenerateDungeon()
 			int32 RotSteps = FMath::RoundToInt(Result.Rotation.Yaw / 90.0f);
 			FOSRoomPossibleNeighbour RotatedConns = GetRotatedConnections(Result.RoomData->Connections, RotSteps);
 
-			if (RotatedConns.North) PendingPositions.Add(TargetPos + FRoomPosition(0, -1)); // North is -Y
-			if (RotatedConns.South) PendingPositions.Add(TargetPos + FRoomPosition(0, 1));  // South is +Y
-			if (RotatedConns.East)  PendingPositions.Add(TargetPos + FRoomPosition(1, 0));  // East is +X
-			if (RotatedConns.West)  PendingPositions.Add(TargetPos + FRoomPosition(-1, 0)); // West is -X
+			// Only add to pending if the spot isn't already occupied
+			auto AddIfEmpty = [&](FRoomPosition P) {
+				if (!RoomGrid.Contains(GetTypeHash(P))) PendingPositions.AddUnique(P);
+				};
+
+			if (RotatedConns.North) AddIfEmpty(TargetPos + FRoomPosition(0, -1));
+			if (RotatedConns.South) AddIfEmpty(TargetPos + FRoomPosition(0, 1));
+			if (RotatedConns.East)  AddIfEmpty(TargetPos + FRoomPosition(1, 0));
+			if (RotatedConns.West)  AddIfEmpty(TargetPos + FRoomPosition(-1, 0));
+		}
+
+		// --- QUALITY CONTROL CHECK ---
+		CalculatePathDistances(FRoomPosition(0, 0));
+
+		int32 MaxDist = 0;
+		for (auto& Elem : RoomGrid)
+		{
+			if (Elem.Value.PathDistanceFromStart > MaxDist)
+			{
+				MaxDist = Elem.Value.PathDistanceFromStart;
+			}
+		}
+
+		// A good floor should have a path at least 40% of the total room count
+		// e.g., if DesiredRoomCount is 20, the Exit must be at least 8 steps away.
+		int32 MinRequiredDist = FMath::Max(5, CurrentFloorConfig->DesiredRoomCount * .7f);
+
+		if (MaxDist >= MinRequiredDist && RoomGrid.Num() >= CurrentFloorConfig->DesiredRoomCount * 0.8f)
+		{
+			bGenerationSuccessful = true;
+		}
+		else
+		{
+			UE_LOG(LogTemp, Warning, TEXT("Dungeon generation rejected (Too small/compact). Retrying..."));
 		}
 	}
+
+	//All rooms with walls to the void get linked to a dead end.
+	SealDungeon();
 
 	CalculatePathDistances(StartPos);
 	AssignSpecialRooms();
 	SpawnRoomActors();
 }
 
-FRoomCandidateResult AOSMapGenerator::FindCompatibleRoom(const FRoomPosition& Pos, const TArray<FOSRoomData*>& AvailableRows)
+FRoomCandidateResult AOSMapGenerator::FindCompatibleRoom(const FRoomPosition& Pos, const TArray<FOSRoomData*>& AvailableRows, bool bForceDeadEnd)
 {
 	FRoomCandidateResult BestResult;
 
+
 	TArray<FOSRoomData*> ShuffledRows = AvailableRows;
+
 	int32 LastIndex = ShuffledRows.Num() - 1;
 	for (int32 i = 0; i <= LastIndex; ++i)
 	{
@@ -113,10 +183,38 @@ FRoomCandidateResult AOSMapGenerator::FindCompatibleRoom(const FRoomPosition& Po
 
 			if (DoConnectionsFit(Pos, RotatedConns))
 			{
-				BestResult.RoomData = Candidate;
-				BestResult.Rotation = FRotator(0.0f, i * 90.0f, 0.0f);
-				BestResult.bIsValid = true;
-				return BestResult;
+				// If we are Sealing (bForceDeadEnd), we want to ensure this room 
+				// DOES NOT open any new doors into the void if possible.
+				if (bForceDeadEnd)
+				{
+					bool bOpensToNothing = false;
+
+					auto CheckVoid = [&](FRoomPosition Offset, bool bOpen) {
+						if (bOpen && !RoomGrid.Contains(GetTypeHash(Pos + Offset))) bOpensToNothing = true;
+						};
+
+					CheckVoid(FRoomPosition(0, -1), RotatedConns.North);
+					CheckVoid(FRoomPosition(0, 1), RotatedConns.South);
+					CheckVoid(FRoomPosition(1, 0), RotatedConns.East);
+					CheckVoid(FRoomPosition(-1, 0), RotatedConns.West);
+
+					if (!bOpensToNothing)
+					{
+						// Perfect seal found
+						BestResult.RoomData = Candidate;
+						BestResult.Rotation = FRotator(0.0f, i * 90.0f, 0.0f);
+						BestResult.bIsValid = true;
+						return BestResult;
+					}
+				}
+				else
+				{
+					// Normal generation, accept the first valid one
+					BestResult.RoomData = Candidate;
+					BestResult.Rotation = FRotator(0.0f, i * 90.0f, 0.0f);
+					BestResult.bIsValid = true;
+					return BestResult;
+				}
 			}
 		}
 	}
@@ -295,6 +393,9 @@ void AOSMapGenerator::SpawnRoomActors()
 		FGeneratedRoomNode& Node = Elem.Value;
 		FVector SpawnLocation(Node.Position.X * TileSize, Node.Position.Y * TileSize, 0.0f);
 
+		uint32 RoomPosHash = GetTypeHash(Node.Position);
+		int32 DeterministicSeed = HashCombine(RandomSeed, RoomPosHash);
+
 		FActorSpawnParameters SpawnParams;
 		SpawnParams.Owner = this;
 		SpawnParams.SpawnCollisionHandlingOverride = ESpawnActorCollisionHandlingMethod::AlwaysSpawn;
@@ -304,11 +405,13 @@ void AOSMapGenerator::SpawnRoomActors()
 			ARoom* NewRoom = GetWorld()->SpawnActor<ARoom>(Node.RoomDataPtr->RoomClass, SpawnLocation, Node.SpawnRotation, SpawnParams);
 			if (NewRoom)
 			{
+				NewRoom->seed = DeterministicSeed;
 				if (NewRoom->PositionText)
 				{
 					NewRoom->PositionText->SetText(FText::FromString(FString::Printf(TEXT("%d, %d"), Node.Position.X, Node.Position.Y)));
 				}
 				SpawnedRooms.Add(NewRoom);
+				NewRoom->Initialize();
 			}
 		}
 	}
@@ -327,10 +430,77 @@ TArray<FOSRoomData*> AOSMapGenerator::GetAllRoomRows()
 
 void AOSMapGenerator::ClearDungeon()
 {
-	for (AActor* Room : SpawnedRooms)
+	for (ARoom* Room : SpawnedRooms)
 	{
-		if (Room) Room->Destroy();
+		if (Room)
+		{
+			Room->DestroySpawnedItems();
+
+			Room->Destroy();
+		}
 	}
 	SpawnedRooms.Empty();
 	RoomGrid.Empty();
+}
+
+int32 AOSMapGenerator::GetNeighborCount(const FRoomPosition& Pos)
+{
+	int32 Count = 0;
+	if (RoomGrid.Contains(GetTypeHash(Pos + FRoomPosition(0, -1)))) Count++;
+	if (RoomGrid.Contains(GetTypeHash(Pos + FRoomPosition(0, 1)))) Count++;
+	if (RoomGrid.Contains(GetTypeHash(Pos + FRoomPosition(1, 0)))) Count++;
+	if (RoomGrid.Contains(GetTypeHash(Pos + FRoomPosition(-1, 0)))) Count++;
+	return Count;
+}
+
+void AOSMapGenerator::SealDungeon()
+{
+	// 1. Find all exposed open doors that point to empty space
+	TArray<FRoomPosition> OpenDoors;
+
+	for (auto& Elem : RoomGrid)
+	{
+		FRoomPosition Pos = Elem.Value.Position;
+		int32 RotSteps = FMath::RoundToInt(Elem.Value.SpawnRotation.Yaw / 90.0f);
+		FOSRoomPossibleNeighbour Conns = GetRotatedConnections(Elem.Value.RoomDataPtr->Connections, RotSteps);
+
+		auto CheckAndAdd = [&](FRoomPosition Offset, bool bIsOpen)
+			{
+				FRoomPosition NeighborPos = Pos + Offset;
+				if (bIsOpen && !RoomGrid.Contains(GetTypeHash(NeighborPos)))
+				{
+					OpenDoors.AddUnique(NeighborPos);
+				}
+			};
+
+		CheckAndAdd(FRoomPosition(0, -1), Conns.North);
+		CheckAndAdd(FRoomPosition(0, 1), Conns.South);
+		CheckAndAdd(FRoomPosition(1, 0), Conns.East);
+		CheckAndAdd(FRoomPosition(-1, 0), Conns.West);
+	}
+
+	TArray<FOSRoomData*> AllRows = GetAllRoomRows();
+
+	// 2. Fill them with Dead Ends (or best fits)
+	for (const FRoomPosition& TargetPos : OpenDoors)
+	{
+		// We pass true to bForceDeadEnd to prefer rooms that don't open NEW paths
+		FRoomCandidateResult Result = FindCompatibleRoom(TargetPos, AllRows, true);
+
+		if (Result.bIsValid)
+		{
+			FGeneratedRoomNode NewNode;
+			NewNode.Position = TargetPos;
+			NewNode.RoomDataPtr = Result.RoomData;
+			NewNode.SpawnRotation = Result.Rotation;
+			NewNode.PathDistanceFromStart = 0;
+			NewNode.bIsDeadEnd = true; // Mark as filler
+
+			RoomGrid.Add(GetTypeHash(TargetPos), NewNode);
+		}
+		else
+		{
+			UE_LOG(LogTemp, Warning, TEXT("Failed to seal dungeon at %d, %d. You might be missing a Dead End room configuration in your DataTable."), TargetPos.X, TargetPos.Y);
+		}
+	}
 }

@@ -4,11 +4,12 @@
 
 #include "CoreMinimal.h"
 #include "GameFramework/Actor.h"
+#include "../Items/Item.h"
 #include "AbilitySystemInterface.h"
 #include "OSSpellbook.generated.h"
 
 UCLASS()
-class OMITTEDSANCTUM_API AOSSpellbook : public AActor, public IAbilitySystemInterface
+class OMITTEDSANCTUM_API AOSSpellbook : public AItem, public IAbilitySystemInterface
 {
 	GENERATED_BODY()
 	

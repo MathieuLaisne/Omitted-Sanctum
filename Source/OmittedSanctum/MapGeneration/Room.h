@@ -5,6 +5,8 @@
 #include "CoreMinimal.h"
 #include "GameFramework/Actor.h"
 #include "Components/TextRenderComponent.h"
+#include "OmittedSanctum/OSItemAvailable.h"
+#include "OmittedSanctum/Items/ItemSpawnPoint.h"
 #include "Room.generated.h"
 
 UCLASS()
@@ -21,6 +23,24 @@ public:
 	UPROPERTY(EditAnywhere)
 	UTextRenderComponent* PositionText;
 
+	UPROPERTY(VisibleAnywhere, Category = "Random")
+	int seed;
+
+	TArray<UItemSpawnPoint*> ItemSpawns;
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Item Generation", meta = (RequiredAssetDataTags = "RowStructure=/Script/OmittedSanctum.OSItemAvailable"))
+	UDataTable* ItemsPool;
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Item Generation")
+	int maxItemGeneratable;
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Item Generation")
+	int minItemGeneratable;
+
+	UPROPERTY()
+	TArray<AItem*> SpawnedItems;
+
+	/*UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Enemy Generation")
+	TArray<AOSEnemySpawnPoint*> EnemySpawns;
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Enemy Generation")
+	UOSEnemyList* Enemypool;*/
 	
 protected:
 	// Called when the game starts or when spawned
@@ -28,6 +48,11 @@ protected:
 
 public:	
 	// Called every frame
-	virtual void Tick(float DeltaTime) override;
+	void Initialize() ;
+
+	void DestroySpawnedItems();
+
+private:
+	TArray<FOSItemAvailable*> GetAllItemRows();
 
 };
