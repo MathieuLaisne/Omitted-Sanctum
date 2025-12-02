@@ -55,6 +55,10 @@
 		{
 			"Name": "NiagaraFluids",
 			"Enabled": true
+		},
+		{
+			"Name": "LudusAI",
+			"Enabled": false
 		}
 	]
 }

@@ -1,0 +1,2 @@
+#include "MagicHelper.h"
+

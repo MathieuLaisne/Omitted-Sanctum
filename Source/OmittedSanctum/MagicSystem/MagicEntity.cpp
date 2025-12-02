@@ -3,6 +3,8 @@
 
 #include "MagicEntity.h"
 #include "NiagaraComponent.h"
+#include <OmittedSanctum/OSPlayerState.h>
+#include <Kismet/GameplayStatics.h>
 
 // Sets default values
 AMagicEntity::AMagicEntity()
@@ -34,5 +36,34 @@ void AMagicEntity::SetMagicElement(FOSMagicElement elem)
 {
 	Element = elem;
 	NiagaraComponent->SetAsset(elem.ElementEffect);
+}
+
+void AMagicEntity::ApplyEffectToCaster()
+{
+	TArray<FOSEffectStrength> Effects = Element.CanApplyToCaster;
+	AOSPlayerState* PlayerState = Cast<AOSPlayerState>(UGameplayStatics::GetPlayerState(GetWorld(), 0));
+	for (FOSEffectStrength Effect : Effects)
+	{
+		if (Effect.strength > FMath::RandRange(0, 100))
+		{
+			PlayerState->StatusComponent->ApplyEffect(Effect, EffectDuration);
+		}
+		else
+			break;
+	}
+}
+
+void AMagicEntity::ApplyEffectToSelf()
+{
+	TArray<FOSEffectStrength> Effects = Element.CanApplyToSelf;
+	for (FOSEffectStrength Effect : Effects)
+	{
+		if (Effect.strength > FMath::RandRange(0, 100))
+		{
+			StatusComponent->ApplyEffect(Effect, EffectDuration);
+		}
+		else
+			break;
+	}
 }
 
