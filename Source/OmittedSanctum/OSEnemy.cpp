@@ -18,6 +18,8 @@ AOSEnemy::AOSEnemy()
 void AOSEnemy::BeginPlay()
 {
 	Super::BeginPlay();
+
+	CurrentHP = MaxHP;
 	
 	if (GetCharacterMovement())
 	{
@@ -31,6 +33,11 @@ void AOSEnemy::BeginPlay()
 		{
 			GetCharacterMovement()->SetMovementMode(MOVE_Walking);
 		}
+	}
+
+	if (Resistances.Num() <= 0)
+	{
+		Resistances.Empty();
 	}
 }
 
@@ -94,8 +101,6 @@ void AOSEnemy::ApplyMagicDamage(FString Element, int HitDamage, TArray<FOSEffect
 		}
 		else
 			break;
-		
-		Damage(HitDamage * damageReduction);
 	}
 }
 

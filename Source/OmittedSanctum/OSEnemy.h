@@ -28,11 +28,17 @@ public:
 	// Called to bind functionality to input
 	virtual void SetupPlayerInputComponent(class UInputComponent* PlayerInputComponent) override;
 
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Enemy")
 	int MaxHP;
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Enemy")
 	int CurrentHP;
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Enemy")
 	int Strength;
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Enemy")
 	float AttackRange;
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Enemy")
 	float AttackSpeed;
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Enemy")
 	TArray<FOSMagicElementRelation> Resistances;
 
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Components")

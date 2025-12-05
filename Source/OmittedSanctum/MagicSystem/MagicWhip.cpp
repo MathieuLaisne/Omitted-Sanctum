@@ -54,9 +54,19 @@ void AMagicWhip::Tick(float DeltaTime)
 {
 	Super::Tick(DeltaTime);
 
+	TimeElapsed += DeltaTime;
+	if (TimeElapsed >= Duration)
+		Destroy();
+
 	// If we have latched onto someone, update the target location based on Player's view
 	if (bIsLatched && GetInstigator())
 	{
+		if (!LatchedEnemy)
+		{
+			bIsLatched = false;
+			return;
+		}
+
 		FVector PlayerLoc;
 		FRotator PlayerRot;
 
@@ -74,12 +84,11 @@ void AMagicWhip::Tick(float DeltaTime)
 		// TODO: remove once we get a proper beam effect.
 		SetActorLocation(TargetLocation);
 
-		TimeElapsed += DeltaTime;
-		if (TimeElapsed >= Duration)
-			Destroy();
 
-		LatchedEnemy->ApplyMagicDamage(Element.name, Damage, Element.CanApplyOnTick, EffectDuration);
+		if(FMath::RoundToFloat(TimeElapsed) == FMath::FloorToFloat(TimeElapsed * 100)/100)
+			LatchedEnemy->ApplyMagicDamage(Element.name, Damage, Element.CanApplyOnTick, EffectDuration);
 	}
+
 }
 
 void AMagicWhip::OnHit(UPrimitiveComponent* HitComp, AActor* OtherActor, UPrimitiveComponent* OtherComp, FVector NormalImpulse, const FHitResult& Hit)
@@ -91,7 +100,7 @@ void AMagicWhip::OnHit(UPrimitiveComponent* HitComp, AActor* OtherActor, UPrimit
 	}
 
 	AOSEnemy* HitEnemy = Cast<AOSEnemy>(OtherActor);
-	if (HitEnemy && OtherActor != GetInstigator())
+	if (HitEnemy && OtherActor != GetInstigator() && !bIsLatched)
 	{
 		bIsLatched = true;
 
@@ -101,8 +110,8 @@ void AMagicWhip::OnHit(UPrimitiveComponent* HitComp, AActor* OtherActor, UPrimit
 
 		HitEnemy->GetCharacterMovement()->DisableMovement();
 
-		// Detach controller (optional: prevents AI from trying to rotate the capsule while flying)
-		// HitCharacter->DetachFromControllerPendingDestroy();
+		// Detach controller (prevents AI from trying to rotate the capsule while flying)
+		HitEnemy->DetachFromControllerPendingDestroy();
 
 		// 3. Enable Physics Simulation on the mesh
 		OtherComp->SetSimulatePhysics(true);
@@ -141,6 +150,8 @@ void AMagicWhip::Destroyed()
 		// Note: The enemy is left in a ragdoll state (Simulate Physics = true).
 		// Because Physics Handle moves objects by applying forces/velocity, 
 		// the enemy will naturally conserve the velocity they had the moment we released them.
+
+		LatchedEnemy->GetCharacterMovement()->SetMovementMode(EMovementMode::MOVE_Falling);
 	}
 
 	Super::Destroyed();
