@@ -12,6 +12,7 @@ AOSEnemy::AOSEnemy()
 	PrimaryActorTick.bCanEverTick = true;
 
 	StatusComponent = CreateDefaultSubobject<UOSStatusEffectComponent>(TEXT("StatusEffects"));
+	ResistanceComponent = CreateDefaultSubobject<UOSMagicResistanceComponent>(TEXT("MagicResistance"));
 }
 
 // Called when the game starts or when spawned
@@ -34,11 +35,6 @@ void AOSEnemy::BeginPlay()
 			GetCharacterMovement()->SetMovementMode(MOVE_Walking);
 		}
 	}
-
-	if (Resistances.Num() <= 0)
-	{
-		Resistances.Empty();
-	}
 }
 
 // Called every frame
@@ -57,38 +53,8 @@ void AOSEnemy::SetupPlayerInputComponent(UInputComponent* PlayerInputComponent)
 
 void AOSEnemy::ApplyMagicDamage(FString Element, int HitDamage, TArray<FOSEffectStrength> Effects, float effectDuration)
 {
-	EOSMagicResWeak FoundRes = EOSMagicResWeak::Zero;
-	for(FOSMagicElementRelation elem : Resistances)
-	{
-		if (elem.ElementName == Element) {
-			FoundRes = elem.Relation;
-			break;
-		}
-	}
-
-	int chance = 0;
-	float damageReduction = 1;
-	switch (FoundRes)
-	{
-		case EOSMagicResWeak::Minor:
-			chance = 5;
-			damageReduction = .95f;
-			break;
-		case EOSMagicResWeak::Small:
-			chance = 10;
-			damageReduction = .9f;
-			break;
-		case EOSMagicResWeak::Moderate:
-			chance = 25;
-			damageReduction = .75f;
-			break;
-		case EOSMagicResWeak::Great:
-			chance = 50;
-			damageReduction = .5f;
-			break;
-		default:
-			break;
-	}
+	EOSMagicResWeak Res = ResistanceComponent->FindResistance(Element);
+	auto[chance, damageReduction] = ResistanceComponent->CalculateResistanceModifier(Res);
 
 	damageReduction *= StatusComponent->GetIncomingDamageMultiplier();
 	Damage(FMath::RoundToInt(HitDamage * damageReduction));

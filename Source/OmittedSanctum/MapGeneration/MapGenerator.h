@@ -107,4 +107,9 @@ private:
 	// Track spawned actors for cleanup
 	UPROPERTY()
 	TArray<ARoom*> SpawnedRooms;
+
+	int MaxWeaponInFloor;
+	int MaxSpellbookInFloor;
+
+	int32 DistanceToExit;
 };

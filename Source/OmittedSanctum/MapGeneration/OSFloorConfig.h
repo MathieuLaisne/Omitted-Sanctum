@@ -55,4 +55,17 @@ class OMITTEDSANCTUM_API UOSFloorConfig : public UDataAsset
 		 */
 		UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Visuals")
 		float DistortionAmount = 0.1f;
+
+		UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Item Generation", meta = (RequiredAssetDataTags = "RowStructure=/Script/OmittedSanctum.OSItemAvailable"))
+		UDataTable* ItemsPool;
+
+		UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Item Limits")
+		int32 MaxWeaponsPerFloor = 2;
+
+		UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Item Limits")
+		int32 MaxSpellbooksPerFloor = 1;
+
+		/** 0.0 to 1.0. If 0.66, rare items only appear in the last 33% of the map. */
+		UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Item Limits")
+		float MinDistancePctForRareLoot = 0.66f;
 };

@@ -35,15 +35,21 @@ void UItemSpawnPoint::BeginPlay()
 	
 }
 
-EOSItemType UItemSpawnPoint::GetItemType(int32 chance)
+EOSItemType UItemSpawnPoint::GetItemType(int32 chance, int& amountLeftWeapon, int& amountLeftSpellbook)
 {
 	float chanceF = (float)chance / 100.0f;
+  float chanceSpellbook = amountLeftSpellbook <= 0 ? 0 : chances.SpellbookChance;
 	if (chanceF < chances.LoreChance)
 		return EOSItemType::Lore;
 	else if (chanceF < chances.LoreChance + chances.ConsumableChance)
 		return EOSItemType::Consumable;
-	else if (chanceF < 1 - chances.SpellbookChance)
-		return EOSItemType::Spellbook;
-	else
-		return EOSItemType::Weapon;
+  else if (chanceF < 1 - chances.SpellbookChance)
+  {
+    amountLeftSpellbook--;
+    return EOSItemType::Spellbook;
+  }
+  else if (amountLeftWeapon <= 0)
+      return EOSItemType::Consumable;
+  amountLeftWeapon--;
+	return EOSItemType::Weapon;
 }

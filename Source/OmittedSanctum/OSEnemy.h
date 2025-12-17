@@ -5,6 +5,7 @@
 #include "CoreMinimal.h"
 #include "GameFramework/Character.h"
 #include "MagicSystem/MagicEntity.h"
+#include "MagicSystem/OSMagicResistanceComponent.h"
 #include "MagicSystem/OSStatusEffectComponent.h"
 #include "OSEnemy.generated.h"
 
@@ -38,8 +39,9 @@ public:
 	float AttackRange;
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Enemy")
 	float AttackSpeed;
-	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Enemy")
-	TArray<FOSMagicElementRelation> Resistances;
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Components")
+	UOSMagicResistanceComponent* ResistanceComponent;
 
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Components")
 	UOSStatusEffectComponent* StatusComponent;

@@ -27,6 +27,7 @@ public:
 	int seed;
 
 	TArray<UItemSpawnPoint*> ItemSpawns;
+
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Item Generation", meta = (RequiredAssetDataTags = "RowStructure=/Script/OmittedSanctum.OSItemAvailable"))
 	UDataTable* ItemsPool;
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Item Generation")
@@ -48,7 +49,7 @@ protected:
 
 public:	
 	// Called every frame
-	void Initialize() ;
+	void Initialize(int& amountLeftWeapon, int& amountLeftSpellbook, TSet<UClass*>& GlobalSpawnedLoreItems, const TArray<FOSItemAvailable*>& GlobalFloorItems);
 
 	void DestroySpawnedItems();
 

@@ -35,14 +35,14 @@ void AMagicBall::OnOverlapBegin(UPrimitiveComponent* OverlappedComp, AActor* Oth
 	TArray<AActor*> ActorsInExplosion;
 
 	TArray<TEnumAsByte<EObjectTypeQuery>> objectTypes;
-	objectTypes.Add(UEngineTypes::ConvertToObjectType(ECollisionChannel::ECC_WorldDynamic));
-	objectTypes.Add(UEngineTypes::ConvertToObjectType(ECollisionChannel::ECC_PhysicsBody));
+	objectTypes.Add(UEngineTypes::ConvertToObjectType(ECollisionChannel::ECC_Pawn));
 
 	UKismetSystemLibrary::SphereOverlapActors(GetWorld(), GetActorLocation(), ExplosionRadius, objectTypes, AActor::StaticClass(), { }, ActorsInExplosion);
 	for (int i = ActorsInExplosion.Num() - 1; i >= 0; i--)
 	{
 		AOSEnemy* HitEnemy = Cast<AOSEnemy>(ActorsInExplosion[i]);
-		HitEnemy->ApplyMagicDamage(Element.name, Damage, Element.CanApplyOnHit, EffectDuration);
+		if(HitEnemy)
+			HitEnemy->ApplyMagicDamage(Element.name, Damage, Element.CanApplyOnHit, EffectDuration);
 	}
 	Destroy();
 }

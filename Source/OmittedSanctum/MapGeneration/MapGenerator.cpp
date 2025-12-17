@@ -28,6 +28,8 @@ void AOSMapGenerator::GenerateDungeon()
 
 	ClearDungeon();
 	RNG.Initialize(RandomSeed);
+	MaxWeaponInFloor = CurrentFloorConfig->MaxWeaponsPerFloor;
+	MaxSpellbookInFloor = CurrentFloorConfig->MaxSpellbooksPerFloor;
 
 	TArray<FOSRoomData*> AllRows = GetAllRoomRows();
 	if (AllRows.Num() == 0) return;
@@ -363,6 +365,7 @@ void AOSMapGenerator::AssignSpecialRooms()
 	}
 
 	if (ExitNode) ExitNode->RoomDataPtr = &CurrentFloorConfig->Exit;
+	DistanceToExit = MaxDist;
 
 	if (CurrentFloorConfig->bRequiresKey)
 	{
@@ -388,8 +391,21 @@ void AOSMapGenerator::AssignSpecialRooms()
 
 void AOSMapGenerator::SpawnRoomActors()
 {
+	int32 MaxDist = 0;
+	int baseChance = 0;
+
+	TSet<UClass*> SpawnedUniqueItems;
+	TArray<FOSItemAvailable*> FloorItemRows;
+	if (CurrentFloorConfig && CurrentFloorConfig->ItemsPool)
+	{
+		FString ContextString;
+		CurrentFloorConfig->ItemsPool->GetAllRows<FOSItemAvailable>(ContextString, FloorItemRows);
+	}
+
 	for (auto& Elem : RoomGrid)
 	{
+		MaxDist = Elem.Value.PathDistanceFromStart;
+
 		FGeneratedRoomNode& Node = Elem.Value;
 		FVector SpawnLocation(Node.Position.X * TileSize, Node.Position.Y * TileSize, 0.0f);
 
@@ -411,7 +427,10 @@ void AOSMapGenerator::SpawnRoomActors()
 					NewRoom->PositionText->SetText(FText::FromString(FString::Printf(TEXT("%d, %d"), Node.Position.X, Node.Position.Y)));
 				}
 				SpawnedRooms.Add(NewRoom);
-				NewRoom->Initialize();
+				if(MaxDist > DistanceToExit * 0.33f)
+					NewRoom->Initialize(MaxWeaponInFloor, MaxSpellbookInFloor, SpawnedUniqueItems, FloorItemRows);
+				else
+					NewRoom->Initialize(baseChance, baseChance, SpawnedUniqueItems, FloorItemRows);
 			}
 		}
 	}

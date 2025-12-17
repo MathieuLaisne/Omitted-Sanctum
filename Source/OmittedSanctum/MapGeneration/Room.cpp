@@ -25,7 +25,7 @@ void ARoom::BeginPlay()
 
 }
 
-void ARoom::Initialize()
+void ARoom::Initialize(int& amountLeftWeapon, int& amountLeftSpellbook, TSet<UClass*>& GlobalSpawnedLoreItems, const TArray<FOSItemAvailable*>& GlobalFloorItems)
 {
 	FRandomStream RNG;
 	
@@ -33,20 +33,45 @@ void ARoom::Initialize()
 
 	GetComponents(ItemSpawns, true);
 
-	// Shuffle all items list to add random
-	TArray<FOSItemAvailable*> ShuffledRows = GetAllItemRows();
+	TArray<FOSItemAvailable*> AllRows;
+	if (ItemsPool == nullptr)
+		AllRows = GlobalFloorItems;
+	else// Creating a map by item type
+		AllRows = GetAllItemRows();
+	TMap<EOSItemType, TArray<FOSItemAvailable*>> ItemBuckets;
 
-	int32 LastIndex = ShuffledRows.Num() - 1;
-	for (int32 i = 0; i <= LastIndex; ++i)
+	for (FOSItemAvailable* Row : AllRows)
 	{
-		int32 Index = RNG.RandRange(i, LastIndex);
-		if (i != Index) ShuffledRows.Swap(i, Index);
+		if (!Row) continue;
+
+		//Only add lore items which weren't added in the floor
+		if (Row->type == EOSItemType::Lore && GlobalSpawnedLoreItems.Contains(Row->ItemClass))
+		{
+			continue;
+		}
+
+		ItemBuckets.FindOrAdd(Row->type).Add(Row);
 	}
+	// Shuffle the buckets themselves so we pull random items from them
+	for (auto& Pair : ItemBuckets)
+	{
+		TArray<FOSItemAvailable*>& Bucket = Pair.Value;
+		if (Bucket.Num() > 1)
+		{
+			int32 LastIndex = Bucket.Num() - 1;
+			for (int32 i = 0; i <= LastIndex; ++i)
+			{
+				int32 Index = RNG.RandRange(i, LastIndex);
+				if (i != Index) Bucket.Swap(i, Index);
+			}
+		}
+	}
+
 
 	// Shuffle items spawns to add random
 	TArray<UItemSpawnPoint*> ShuffledItemSpawns = ItemSpawns;
 
-	LastIndex = ShuffledItemSpawns.Num() - 1;
+	int32 LastIndex = ShuffledItemSpawns.Num() - 1;
 	for (int32 i = 0; i <= LastIndex; ++i)
 	{
 		int32 Index = RNG.RandRange(i, LastIndex);
@@ -62,25 +87,46 @@ void ARoom::Initialize()
 
 	for (UItemSpawnPoint* ItemSpawn : ShuffledItemSpawns)
 	{
+		bool bShouldSpawn = false;
+
+		// Determine if we should attempt to spawn based on logic
 		if (ItemSpawn->AlwaysUsed)
+			bShouldSpawn = true;
+		else if (amountItem < maxItemGeneratable && RNG.RandRange(0, 100) > chanceStop)
+			bShouldSpawn = true;
+
+		if (bShouldSpawn)
 		{
+			// Calculate type using reference counters (Weapons/Spellbooks)
 			int32 itemTypeChance = RNG.RandRange(0, 100);
-			EOSItemType itemTypeToFetch = ItemSpawn->GetItemType(itemTypeChance);
-			FOSItemAvailable* ItemFetched = ShuffledRows.FindByPredicate([itemTypeToFetch](FOSItemAvailable* item){return item->type == itemTypeToFetch; })[0];
-			AItem* GeneratedItem = GetWorld()->SpawnActor<AItem>(ItemFetched->ItemClass, ItemSpawn->GetComponentTransform(), SpawnInfo);
-			SpawnedItems.Add(GeneratedItem);
-		}
-		else if(amountItem < maxItemGeneratable && RNG.RandRange(0,100) > chanceStop)
-		{
-			int32 itemTypeChance = RNG.RandRange(0, 100);
-			EOSItemType itemTypeToFetch = ItemSpawn->GetItemType(itemTypeChance);
-			FOSItemAvailable* ItemFetched = ShuffledRows.FindByPredicate([itemTypeToFetch](FOSItemAvailable* item) {return item->type == itemTypeToFetch; })[0];
-			AItem* GeneratedItem = GetWorld()->SpawnActor<AItem>(ItemFetched->ItemClass, ItemSpawn->GetComponentTransform(), SpawnInfo);
-			SpawnedItems.Add(GeneratedItem);
-			amountItem++;
-			if (amountItem > minItemGeneratable)
+			EOSItemType itemTypeToFetch = ItemSpawn->GetItemType(itemTypeChance, amountLeftWeapon, amountLeftSpellbook);
+
+			// Fetch from our optimized buckets
+			if (ItemBuckets.Contains(itemTypeToFetch) && ItemBuckets[itemTypeToFetch].Num() > 0)
 			{
-				chanceStop = amountItem / maxItemGeneratable * 100; //the more the spawn points have been used, the less likely we'll use one more.
+				FOSItemAvailable* ItemFetched = ItemBuckets[itemTypeToFetch].Pop();
+
+				if (ItemFetched && ItemFetched->ItemClass)
+				{
+					AItem* GeneratedItem = GetWorld()->SpawnActor<AItem>(ItemFetched->ItemClass, ItemSpawn->GetComponentTransform(), SpawnInfo);
+					SpawnedItems.Add(GeneratedItem);
+
+					// Track Lore items globally to prevent duplicates
+					if (itemTypeToFetch == EOSItemType::Lore)
+					{
+						GlobalSpawnedLoreItems.Add(ItemFetched->ItemClass);
+					}
+
+					// Only increment local room count for non-always-used spawns
+					if (!ItemSpawn->AlwaysUsed)
+					{
+						amountItem++;
+						if (amountItem > minItemGeneratable)
+						{
+							chanceStop = amountItem / maxItemGeneratable * 100;
+						}
+					}
+				}
 			}
 		}
 	}

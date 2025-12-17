@@ -54,6 +54,6 @@ protected:
 	virtual void BeginPlay() override;
 
 public:	
-	EOSItemType GetItemType(int32 chance);
+	EOSItemType GetItemType(int32 chance, int& amountLeftWeapon, int& amountLeftSpellbook);
 
 };
