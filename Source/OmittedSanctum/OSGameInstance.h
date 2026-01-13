@@ -1,0 +1,69 @@
+// Fill out your copyright notice in the Description page of Project Settings.
+
+#pragma once
+
+#include "CoreMinimal.h"
+#include "Engine/GameInstance.h"
+#include "OSTypes.h"
+#include "OSSaveGame.h"
+#include "OSGameInstance.generated.h"
+
+/**
+ * 
+ */
+UCLASS()
+class OMITTEDSANCTUM_API UOSGameInstance : public UGameInstance
+{
+	GENERATED_BODY()
+
+public:
+  UFUNCTION(BlueprintCallable, Category = "Game Flow")
+  void SetSelectedClass(EOSPlayerClass NewClass);
+
+  UFUNCTION(BlueprintCallable, Category = "Game Flow")
+  EOSPlayerClass GetSelectedClass() const { return CurrentSelectedClass; }
+
+  UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Data")
+  UDataTable* ClassDataTable;
+
+#pragma region Save/Load System
+  UFUNCTION(BlueprintCallable, Category = "SaveSystem")
+  void CreateNewRun();
+
+  UFUNCTION(BlueprintCallable, Category = "SaveSystem")
+  void SaveCurrentRun();
+
+  UFUNCTION(BlueprintCallable, Category = "SaveSystem")
+  bool LoadRun();
+#pragma endregion
+
+  // Helper to get data for the Generator or PlayerState
+  UFUNCTION(BlueprintCallable, Category = "SaveSystem")
+  UOSSaveGame* GetCurrentSaveData() const { return CurrentSaveGame; }
+
+#pragma region Meta
+  // Call this when the player finishes a run (Death or Win) to bank their earnings
+  UFUNCTION(BlueprintCallable, Category = "MetaProgress")
+  void AddMetaCurrency(EOSPlayerClass ClassType, int32 Amount);
+
+  // Returns current currency for UI
+  UFUNCTION(BlueprintCallable, Category = "MetaProgress")
+  int32 GetMetaCurrency(EOSPlayerClass ClassType);
+
+  // Attempts to buy an item from the Shop Table
+  // Returns true if successful (enough money)
+  UFUNCTION(BlueprintCallable, Category = "MetaProgress")
+  bool PurchaseShopItem(EOSPlayerClass ClassType, FName ItemRowName);
+
+  // Checks if an item is already unlocked
+  UFUNCTION(BlueprintCallable, Category = "MetaProgress")
+  bool IsItemUnlocked(EOSPlayerClass ClassType, FName ItemRowName);
+
+  UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Data")
+  UDataTable* ShopDataTable;
+#pragma endregion
+
+private:
+  EOSPlayerClass CurrentSelectedClass;
+  UOSSaveGame* CurrentSaveGame;
+};

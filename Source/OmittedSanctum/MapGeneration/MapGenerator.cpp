@@ -4,6 +4,7 @@
 #include "Room.h"
 #include "Engine/DataTable.h"
 #include "Kismet/KismetMathLibrary.h"
+#include "OmittedSanctum/OSGameInstance.h"
 #include "Containers/Queue.h"
 #include "MapGeneratorLibrary.h"
 
@@ -24,6 +25,19 @@ void AOSMapGenerator::GenerateDungeon()
 	{
 		UE_LOG(LogTemp, Error, TEXT("MapGenerator: Missing FloorConfig or RoomTable!"));
 		return;
+	}
+
+	UOSGameInstance* GI = Cast<UOSGameInstance>(GetGameInstance());
+	if (GI && GI->GetCurrentSaveData())
+	{
+		// Use the saved seed!
+		RandomSeed = GI->GetCurrentSaveData()->CurrentDungeonSeed;
+	}
+	else
+	{
+		// Fallback or New Random
+		RNG.GenerateNewSeed();
+		RandomSeed = RNG.GetCurrentSeed();
 	}
 
 	ClearDungeon();

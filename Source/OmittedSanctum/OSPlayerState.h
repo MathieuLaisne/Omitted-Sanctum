@@ -16,6 +16,8 @@ class OMITTEDSANCTUM_API AOSPlayerState : public APlayerState
 	GENERATED_BODY()
 	
 public:
+	void BeginPlay() override;
+
 	UFUNCTION(BlueprintCallable)
 	void OSTakeDamage(int dmg);
 

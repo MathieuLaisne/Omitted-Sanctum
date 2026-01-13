@@ -1,7 +1,7 @@
 // Fill out your copyright notice in the Description page of Project Settings.
 
-
 #include "OSPlayerState.h"
+#include "OSGameInstance.h"
 
 void AOSPlayerState::OSTakeDamage(int dmg)
 {
@@ -11,4 +11,21 @@ void AOSPlayerState::OSTakeDamage(int dmg)
     GameOver();
   else
     OnTakingDamage();
+}
+
+void AOSPlayerState::BeginPlay()
+{
+  Super::BeginPlay();
+
+  UOSGameInstance* GI = Cast<UOSGameInstance>(GetGameInstance());
+  if (GI && GI->GetCurrentSaveData())
+  {
+    // LOAD HP from Save
+    CurrentHP = GI->GetCurrentSaveData()->CurrentHP;
+  }
+  else
+  {
+    // NEW RUN defaults
+    CurrentHP = 100;
+  }
 }
