@@ -21,6 +21,8 @@ void UOSGameInstance::CreateNewRun()
     // Generate a fresh seed for the new run
     CurrentSaveGame->CurrentDungeonSeed = FMath::Rand();
 
+    CurrentSaveGame->MinimapData.Empty();
+
     // Look up base stats from DataTable
     if (ClassDataTable)
     {
@@ -73,6 +75,49 @@ bool UOSGameInstance::LoadRun()
     }
   }
   return false;
+}
+
+void UOSGameInstance::RegisterRoomOnMinimap(FRoomPosition Pos, FOSRoomPossibleNeighbour OpenDoors)
+{
+  if (CurrentSaveGame)
+  {
+    // If it doesn't exist, add it as unexplored. 
+    // If it exists, we just update doors (generation phase).
+    if (!CurrentSaveGame->MinimapData.Contains(Pos))
+    {
+      FMinimapRoomData NewData = FMinimapRoomData(false, OpenDoors);
+      CurrentSaveGame->MinimapData.Add(Pos, NewData);
+    }
+  }
+}
+
+void UOSGameInstance::MarkRoomAsExplored(FRoomPosition Pos)
+{
+  if (CurrentSaveGame)
+  {
+    FMinimapRoomData* Data = CurrentSaveGame->MinimapData.Find(Pos);
+    if (Data)
+    {
+      Data->bIsExplored = true;
+    }
+  }
+}
+
+bool UOSGameInstance::IsRoomExplored(FRoomPosition Pos)
+{
+  if (CurrentSaveGame)
+  {
+    if (const FMinimapRoomData* Data = CurrentSaveGame->MinimapData.Find(Pos))
+    {
+      return Data->bIsExplored;
+    }
+  }
+  return false;
+}
+
+FOSRoomPossibleNeighbour UOSGameInstance::GetRoomDoors(FRoomPosition Pos)
+{
+  return CurrentSaveGame->MinimapData[Pos].OpenDoors;
 }
 
 void UOSGameInstance::AddMetaCurrency(EOSPlayerClass ClassType, int32 Amount)

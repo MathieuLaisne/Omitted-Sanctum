@@ -6,7 +6,9 @@
 #include "GameFramework/Actor.h"
 #include "Components/TextRenderComponent.h"
 #include "OmittedSanctum/OSItemAvailable.h"
+#include "RoomStructures.h"
 #include "OmittedSanctum/Items/ItemSpawnPoint.h"
+#include "Components/BoxComponent.h"
 #include "Room.generated.h"
 
 UCLASS()
@@ -42,6 +44,13 @@ public:
 	TArray<AOSEnemySpawnPoint*> EnemySpawns;
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Enemy Generation")
 	UOSEnemyList* Enemypool;*/
+
+
+	UPROPERTY(VisibleAnywhere, Category = "MapSystem")
+	FRoomPosition GridPosition;
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "MapSystem")
+	UBoxComponent* ExplorationTrigger;
 	
 protected:
 	// Called when the game starts or when spawned
@@ -52,6 +61,9 @@ public:
 	void Initialize(int& amountLeftWeapon, int& amountLeftSpellbook, TSet<UClass*>& GlobalSpawnedLoreItems, const TArray<FOSItemAvailable*>& GlobalFloorItems);
 
 	void DestroySpawnedItems();
+
+	UFUNCTION(BlueprintCallable)
+	void OnEntered(class UPrimitiveComponent* ThisComp, class AActor* OtherActor, class UPrimitiveComponent* OtherComp, int32 OtherBodyIndex, bool bFromSweep, const FHitResult& SweepResult);
 
 private:
 	TArray<FOSItemAvailable*> GetAllItemRows();

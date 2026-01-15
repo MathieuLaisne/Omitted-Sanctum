@@ -1,6 +1,7 @@
 // Fill out your copyright notice in the Description page of Project Settings.
 
 #include "Room.h"
+#include "OmittedSanctum/OSGameInstance.h"
 
 // Sets default values
 ARoom::ARoom()
@@ -15,6 +16,9 @@ ARoom::ARoom()
 	PositionText = CreateDefaultSubobject<UTextRenderComponent>(TEXT("PositionText"));
 	PositionText->SetupAttachment(Root);
 
+	ExplorationTrigger = CreateDefaultSubobject<UBoxComponent>(TEXT("ExplorationTrigger"));
+	ExplorationTrigger->SetupAttachment(Root);
+
 	RootComponent = Root;
 }
 
@@ -23,6 +27,7 @@ void ARoom::BeginPlay()
 {
 	Super::BeginPlay();
 
+	ExplorationTrigger->OnComponentBeginOverlap.AddDynamic(this, &ARoom::OnEntered);
 }
 
 void ARoom::Initialize(int& amountLeftWeapon, int& amountLeftSpellbook, TSet<UClass*>& GlobalSpawnedLoreItems, const TArray<FOSItemAvailable*>& GlobalFloorItems)
@@ -142,6 +147,16 @@ void ARoom::DestroySpawnedItems()
 		}
 	}
 	SpawnedItems.Empty();
+}
+
+void ARoom::OnEntered(class UPrimitiveComponent* ThisComp, class AActor* OtherActor, class UPrimitiveComponent* OtherComp, int32 OtherBodyIndex, bool bFromSweep, const FHitResult& SweepResult)
+{
+	if (	OtherActor->ActorHasTag(FName("Player"))	)
+	{
+		UOSGameInstance* GI = Cast<UOSGameInstance>(GetGameInstance());
+		if (GI)
+			GI->MarkRoomAsExplored(GridPosition);
+	}
 }
 
 TArray<FOSItemAvailable*> ARoom::GetAllItemRows()

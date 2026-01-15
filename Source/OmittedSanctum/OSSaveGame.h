@@ -48,6 +48,9 @@ public:
   UPROPERTY(VisibleAnywhere, Category = "World")
   int32 CurrentFloorIndex;
 
+  UPROPERTY(VisibleAnywhere, Category = "Map")
+  TMap<FRoomPosition, FMinimapRoomData> MinimapData;
+
   // Critical for MapGenerator
   // Saving this ensures we can regenerate the exact same floor if we crash/reload
   UPROPERTY(VisibleAnywhere, Category = "World")

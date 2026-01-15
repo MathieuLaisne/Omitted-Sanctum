@@ -41,6 +41,18 @@ public:
   UFUNCTION(BlueprintCallable, Category = "SaveSystem")
   UOSSaveGame* GetCurrentSaveData() const { return CurrentSaveGame; }
 
+  UFUNCTION(BlueprintCallable, Category = "MapSystem")
+  void RegisterRoomOnMinimap(FRoomPosition Pos, FOSRoomPossibleNeighbour OpenDoors);
+
+  UFUNCTION(BlueprintCallable, Category = "MapSystem")
+  void MarkRoomAsExplored(FRoomPosition Pos);
+
+  UFUNCTION(BlueprintCallable, Category = "MapSystem")
+  bool IsRoomExplored(FRoomPosition Pos);
+
+  UFUNCTION(BlueprintCallable, Category = "MapSystem")
+  FOSRoomPossibleNeighbour GetRoomDoors(FRoomPosition Pos);
+
 #pragma region Meta
   // Call this when the player finishes a run (Death or Win) to bank their earnings
   UFUNCTION(BlueprintCallable, Category = "MetaProgress")

@@ -74,7 +74,7 @@ protected:
 
 private:
 	// Internal grid storage
-	TMap<uint32, FGeneratedRoomNode> RoomGrid;
+	TMap<FRoomPosition, FGeneratedRoomNode> RoomGrid;
 
 	// Helper to retrieve data from the table
 	TArray<FOSRoomData*> GetAllRoomRows();

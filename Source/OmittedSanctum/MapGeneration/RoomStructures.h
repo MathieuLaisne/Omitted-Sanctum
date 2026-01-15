@@ -3,9 +3,10 @@
 #pragma once
 
 #include "CoreMinimal.h"
-#include "Room.h"
+#include "Templates/TypeHash.h"
 #include "RoomStructures.generated.h"
 
+class ARoom;
 
 USTRUCT(BlueprintType)
 struct FOSRoomPossibleNeighbour
@@ -31,7 +32,6 @@ public:
 	/** Negative Y	*/
 	UPROPERTY(EditAnywhere, BlueprintReadWrite)
 	bool North;
-
 };
 
 UENUM(BlueprintType)
@@ -90,7 +90,7 @@ public:
 
 // Helper struct to represent a room position in a 2D grid
 USTRUCT(BlueprintType)
-struct FRoomPosition
+struct OMITTEDSANCTUM_API FRoomPosition
 {
 	GENERATED_USTRUCT_BODY()
 
@@ -112,3 +112,9 @@ FORCEINLINE uint32 GetTypeHash(const FRoomPosition& Pos)
 {
 	return HashCombine(GetTypeHash(Pos.X), GetTypeHash(Pos.Y));
 };
+
+FORCEINLINE uint32 GetTypeHash(const FOSRoomPossibleNeighbour& Neighbours)
+{
+	return HashCombine(	HashCombine(GetTypeHash(Neighbours.East), GetTypeHash(Neighbours.West)),
+											HashCombine(GetTypeHash(Neighbours.North), GetTypeHash(Neighbours.South)));
+}

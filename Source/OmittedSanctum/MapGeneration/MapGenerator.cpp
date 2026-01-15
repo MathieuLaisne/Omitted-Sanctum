@@ -59,7 +59,7 @@ void AOSMapGenerator::GenerateDungeon()
 	StartNode.SpawnRotation = FRotator::ZeroRotator;
 	StartNode.PathDistanceFromStart = 0;
 
-	RoomGrid.Add(GetTypeHash(StartPos), StartNode);
+	RoomGrid.Add(StartPos, StartNode);
 
 	// Initial Neighbor Search based on Fixed Entrance Connections
 	// NOTE: North is Negative Y, South is Positive Y
@@ -111,7 +111,7 @@ void AOSMapGenerator::GenerateDungeon()
 		// Remove immediately so we don't process it twice
 		PendingPositions.RemoveAt(SelectedIndex);
 
-		if (RoomGrid.Contains(GetTypeHash(TargetPos))) continue;
+		if (RoomGrid.Contains(TargetPos)) continue;
 
 		// Find a room
 		FRoomCandidateResult Result = FindCompatibleRoom(TargetPos, AllRows);
@@ -124,7 +124,7 @@ void AOSMapGenerator::GenerateDungeon()
 			NewNode.SpawnRotation = Result.Rotation;
 			NewNode.PathDistanceFromStart = 0;
 
-			RoomGrid.Add(GetTypeHash(TargetPos), NewNode);
+			RoomGrid.Add(TargetPos, NewNode);
 			CurrentRoomCount++;
 
 			// Add valid neighbors based on the ROTATED connections
@@ -133,7 +133,9 @@ void AOSMapGenerator::GenerateDungeon()
 
 			// Only add to pending if the spot isn't already occupied
 			auto AddIfEmpty = [&](FRoomPosition P) {
-				if (!RoomGrid.Contains(GetTypeHash(P))) PendingPositions.AddUnique(P);
+				if (!RoomGrid.Contains(P) )
+					PendingPositions.AddUnique(P);
+				GI->RegisterRoomOnMinimap(P, RotatedConns);
 				};
 
 			if (RotatedConns.North) AddIfEmpty(TargetPos + FRoomPosition(0, -1));
@@ -206,7 +208,7 @@ FRoomCandidateResult AOSMapGenerator::FindCompatibleRoom(const FRoomPosition& Po
 					bool bOpensToNothing = false;
 
 					auto CheckVoid = [&](FRoomPosition Offset, bool bOpen) {
-						if (bOpen && !RoomGrid.Contains(GetTypeHash(Pos + Offset))) bOpensToNothing = true;
+						if (bOpen && !RoomGrid.Contains(Pos + Offset)) bOpensToNothing = true;
 						};
 
 					CheckVoid(FRoomPosition(0, -1), RotatedConns.North);
@@ -280,9 +282,9 @@ bool AOSMapGenerator::DoConnectionsFit(const FRoomPosition& Pos, const FOSRoomPo
 	auto CheckDir = [&](FRoomPosition Offset, bool bMySideOpen) -> bool
 		{
 			FRoomPosition NeighborPos = Offset + Pos;
-			if (RoomGrid.Contains(GetTypeHash(NeighborPos)))
+			if (RoomGrid.Contains(NeighborPos))
 			{
-				const FGeneratedRoomNode& Neighbor = RoomGrid[GetTypeHash(NeighborPos)];
+				const FGeneratedRoomNode& Neighbor = RoomGrid[NeighborPos];
 
 				int32 NeighborRotSteps = FMath::RoundToInt(Neighbor.SpawnRotation.Yaw / 90.0f);
 				FOSRoomPossibleNeighbour NeighborConns = GetRotatedConnections(Neighbor.RoomDataPtr->Connections, NeighborRotSteps);
@@ -319,9 +321,9 @@ void AOSMapGenerator::CalculatePathDistances(const FRoomPosition& StartPos)
 	TQueue<FRoomPosition> Queue;
 	Queue.Enqueue(StartPos);
 
-	if (RoomGrid.Contains(GetTypeHash(StartPos)))
+	if (RoomGrid.Contains(StartPos))
 	{
-		RoomGrid[GetTypeHash(StartPos)].PathDistanceFromStart = 0;
+		RoomGrid[StartPos].PathDistanceFromStart = 0;
 	}
 
 	while (!Queue.IsEmpty())
@@ -329,8 +331,8 @@ void AOSMapGenerator::CalculatePathDistances(const FRoomPosition& StartPos)
 		FRoomPosition CurrentPos;
 		Queue.Dequeue(CurrentPos);
 
-		if (!RoomGrid.Contains(GetTypeHash(CurrentPos))) continue;
-		FGeneratedRoomNode& CurrentNode = RoomGrid[GetTypeHash(CurrentPos)];
+		if (!RoomGrid.Contains(CurrentPos)) continue;
+		FGeneratedRoomNode& CurrentNode = RoomGrid[CurrentPos];
 
 		int32 RotSteps = FMath::RoundToInt(CurrentNode.SpawnRotation.Yaw / 90.0f);
 		FOSRoomPossibleNeighbour Conns = GetRotatedConnections(CurrentNode.RoomDataPtr->Connections, RotSteps);
@@ -350,9 +352,9 @@ void AOSMapGenerator::CalculatePathDistances(const FRoomPosition& StartPos)
 			if (D.bOpen)
 			{
 				FRoomPosition NeighborPos = CurrentPos + D.Offset;
-				if (RoomGrid.Contains(GetTypeHash(NeighborPos)))
+				if (RoomGrid.Contains(NeighborPos))
 				{
-					FGeneratedRoomNode& NeighborNode = RoomGrid[GetTypeHash(NeighborPos)];
+					FGeneratedRoomNode& NeighborNode = RoomGrid[NeighborPos];
 					if (NeighborNode.PathDistanceFromStart == -1)
 					{
 						NeighborNode.PathDistanceFromStart = CurrentNode.PathDistanceFromStart + 1;
@@ -435,6 +437,7 @@ void AOSMapGenerator::SpawnRoomActors()
 			ARoom* NewRoom = GetWorld()->SpawnActor<ARoom>(Node.RoomDataPtr->RoomClass, SpawnLocation, Node.SpawnRotation, SpawnParams);
 			if (NewRoom)
 			{
+				NewRoom->GridPosition = Node.Position;
 				NewRoom->seed = DeterministicSeed;
 				if (NewRoom->PositionText)
 				{
@@ -479,10 +482,10 @@ void AOSMapGenerator::ClearDungeon()
 int32 AOSMapGenerator::GetNeighborCount(const FRoomPosition& Pos)
 {
 	int32 Count = 0;
-	if (RoomGrid.Contains(GetTypeHash(Pos + FRoomPosition(0, -1)))) Count++;
-	if (RoomGrid.Contains(GetTypeHash(Pos + FRoomPosition(0, 1)))) Count++;
-	if (RoomGrid.Contains(GetTypeHash(Pos + FRoomPosition(1, 0)))) Count++;
-	if (RoomGrid.Contains(GetTypeHash(Pos + FRoomPosition(-1, 0)))) Count++;
+	if (RoomGrid.Contains(Pos + FRoomPosition(0, -1))) Count++;
+	if (RoomGrid.Contains(Pos + FRoomPosition(0, 1))) Count++;
+	if (RoomGrid.Contains(Pos + FRoomPosition(1, 0))) Count++;
+	if (RoomGrid.Contains(Pos + FRoomPosition(-1, 0))) Count++;
 	return Count;
 }
 
@@ -500,7 +503,7 @@ void AOSMapGenerator::SealDungeon()
 		auto CheckAndAdd = [&](FRoomPosition Offset, bool bIsOpen)
 			{
 				FRoomPosition NeighborPos = Pos + Offset;
-				if (bIsOpen && !RoomGrid.Contains(GetTypeHash(NeighborPos)))
+				if (bIsOpen && !RoomGrid.Contains(NeighborPos))
 				{
 					OpenDoors.AddUnique(NeighborPos);
 				}
@@ -529,7 +532,7 @@ void AOSMapGenerator::SealDungeon()
 			NewNode.PathDistanceFromStart = 0;
 			NewNode.bIsDeadEnd = true; // Mark as filler
 
-			RoomGrid.Add(GetTypeHash(TargetPos), NewNode);
+			RoomGrid.Add(TargetPos, NewNode);
 		}
 		else
 		{

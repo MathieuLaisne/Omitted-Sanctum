@@ -8,7 +8,7 @@ public class OmittedSanctum : ModuleRules
 	{
 		PCHUsage = PCHUsageMode.UseExplicitOrSharedPCHs;
 	
-		PublicDependencyModuleNames.AddRange(new string[] { "Core", "CoreUObject", "Engine", "InputCore", "EnhancedInput", "Niagara", "GameplayAbilities", "NavigationSystem", "AIModule" });
+		PublicDependencyModuleNames.AddRange(new string[] { "Core", "CoreUObject", "Engine", "InputCore", "EnhancedInput", "Niagara", "GameplayAbilities", "NavigationSystem", "AIModule", "Slate", "SlateCore" });
 
         PrivateDependencyModuleNames.AddRange(new string[] {  });
 

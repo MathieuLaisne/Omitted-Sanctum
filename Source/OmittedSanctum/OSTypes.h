@@ -3,6 +3,7 @@
 #include "CoreMinimal.h"
 #include "Engine/DataTable.h"
 #include "Items/Item.h"
+#include "MapGeneration/RoomStructures.h"
 #include "OSTypes.generated.h"
 
 UENUM(BlueprintType)
@@ -70,3 +71,26 @@ struct FOSShopItem : public FTableRowBase
   UPROPERTY(EditAnywhere, BlueprintReadWrite)
   UTexture2D* Icon;
 };
+
+USTRUCT(BlueprintType)
+struct FMinimapRoomData
+{
+  GENERATED_BODY()
+
+  UPROPERTY(EditAnywhere, BlueprintReadWrite)
+  bool bIsExplored = false;
+
+  // We store the connections here so the UI knows where to draw lines/openings
+  UPROPERTY(EditAnywhere, BlueprintReadWrite)
+  FOSRoomPossibleNeighbour OpenDoors;
+
+  FMinimapRoomData() {};
+  FMinimapRoomData(bool bExplored, FOSRoomPossibleNeighbour Doors)
+    : bIsExplored(bExplored), OpenDoors(Doors) {
+  }
+};
+
+//FORCEINLINE uint32 GetTypeHash(const FMinimapRoomData& MapData)
+//{
+//  return HashCombine(GetTypeHash(MapData.bIsExplored), GetTypeHash(MapData.OpenDoors));
+//};
