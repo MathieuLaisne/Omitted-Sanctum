@@ -155,7 +155,9 @@ void ARoom::OnEntered(class UPrimitiveComponent* ThisComp, class AActor* OtherAc
 	{
 		UOSGameInstance* GI = Cast<UOSGameInstance>(GetGameInstance());
 		if (GI)
+		{
 			GI->MarkRoomAsExplored(GridPosition);
+		}
 	}
 }
 

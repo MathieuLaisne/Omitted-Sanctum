@@ -106,6 +106,7 @@ public:
 	bool operator==(const FRoomPosition& Other) const { return X == Other.X && Y == Other.Y; }
 	FRoomPosition operator-(const FRoomPosition& Other) const { return FRoomPosition(X - Other.X, Y - Other.Y); }
 	FRoomPosition operator+(const FRoomPosition& Other) const { return FRoomPosition(X + Other.X, Y + Other.Y); }
+
 };
 
 FORCEINLINE uint32 GetTypeHash(const FRoomPosition& Pos)

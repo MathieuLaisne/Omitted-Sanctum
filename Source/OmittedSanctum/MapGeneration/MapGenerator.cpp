@@ -31,7 +31,8 @@ void AOSMapGenerator::GenerateDungeon()
 	if (GI && GI->GetCurrentSaveData())
 	{
 		// Use the saved seed!
-		RandomSeed = GI->GetCurrentSaveData()->CurrentDungeonSeed;
+		FFloorSaveData& CurrentData = GI->GetCurrentSaveData()->GetCurrentFloorData();
+		RandomSeed = CurrentData.FloorSeed;
 	}
 	else
 	{
@@ -135,7 +136,6 @@ void AOSMapGenerator::GenerateDungeon()
 			auto AddIfEmpty = [&](FRoomPosition P) {
 				if (!RoomGrid.Contains(P) )
 					PendingPositions.AddUnique(P);
-				GI->RegisterRoomOnMinimap(P, RotatedConns);
 				};
 
 			if (RotatedConns.North) AddIfEmpty(TargetPos + FRoomPosition(0, -1));
@@ -163,6 +163,7 @@ void AOSMapGenerator::GenerateDungeon()
 		if (MaxDist >= MinRequiredDist && RoomGrid.Num() >= CurrentFloorConfig->DesiredRoomCount * 0.8f)
 		{
 			bGenerationSuccessful = true;
+			break;
 		}
 		else
 		{
@@ -176,6 +177,22 @@ void AOSMapGenerator::GenerateDungeon()
 	CalculatePathDistances(StartPos);
 	AssignSpecialRooms();
 	SpawnRoomActors();
+
+	int currentRow = 0;
+	FString DebugStr = "\n\n";
+	for (auto& room : RoomGrid)
+	{
+		if (room.Key.X != currentRow)
+		{
+			DebugStr += "\n";
+			currentRow = room.Key.X;
+		}
+		DebugStr += UMapGeneratorLibrary::RoomToString(room.Value.RoomDataPtr->Connections);
+
+		int32 RotSteps = FMath::RoundToInt(room.Value.SpawnRotation.Yaw / 90.0f);
+		GI->RegisterRoomOnMinimap(room.Key, GetRotatedConnections(room.Value.RoomDataPtr->Connections, RotSteps));
+	}
+	UE_LOG(LogTemp, Warning, TEXT("%s"), *DebugStr);
 }
 
 FRoomCandidateResult AOSMapGenerator::FindCompatibleRoom(const FRoomPosition& Pos, const TArray<FOSRoomData*>& AvailableRows, bool bForceDeadEnd)
@@ -466,6 +483,8 @@ TArray<FOSRoomData*> AOSMapGenerator::GetAllRoomRows()
 
 void AOSMapGenerator::ClearDungeon()
 {
+	UOSGameInstance* GI = Cast<UOSGameInstance>(GetGameInstance());
+
 	for (ARoom* Room : SpawnedRooms)
 	{
 		if (Room)
@@ -477,6 +496,7 @@ void AOSMapGenerator::ClearDungeon()
 	}
 	SpawnedRooms.Empty();
 	RoomGrid.Empty();
+	GI->EmptyMap();
 }
 
 int32 AOSMapGenerator::GetNeighborCount(const FRoomPosition& Pos)
@@ -491,6 +511,9 @@ int32 AOSMapGenerator::GetNeighborCount(const FRoomPosition& Pos)
 
 void AOSMapGenerator::SealDungeon()
 {
+	UOSGameInstance* GI = Cast<UOSGameInstance>(GetGameInstance());
+
+
 	// 1. Find all exposed open doors that point to empty space
 	TArray<FRoomPosition> OpenDoors;
 

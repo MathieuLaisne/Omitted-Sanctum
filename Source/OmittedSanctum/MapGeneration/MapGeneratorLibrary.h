@@ -26,5 +26,6 @@ public:
 	UFUNCTION(BlueprintCallable)
 	static FString ToString(const FOSRoomData& roomData);
 	UFUNCTION(BlueprintCallable)
-	static FString NeighboursToString(const FOSRoomPossibleNeighbour& roomNeighbours);
+	static FString RoomToString(const FOSRoomPossibleNeighbour& roomNeighbours);
+	
 };

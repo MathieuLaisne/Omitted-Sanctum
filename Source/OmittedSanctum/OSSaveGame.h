@@ -40,19 +40,25 @@ public:
   UPROPERTY(VisibleAnywhere, Category = "Player")
   int32 MaxHP;
 
-  // Simplification: Save item class names or a custom struct for inventory
   UPROPERTY(VisibleAnywhere, Category = "Player")
-  TArray<FString> InventoryItemIDs;
+  FRoomPosition PlayerPosition;
+
+  UPROPERTY(VisibleAnywhere, Category = "Player")
+  TArray<FSaveItem> InventoryItems;
 
   // --- Dungeon State ---
-  UPROPERTY(VisibleAnywhere, Category = "World")
+  UPROPERTY(VisibleAnywhere, Category = "Run")
+  bool bHasActiveRun;
+
+  UPROPERTY(VisibleAnywhere, Category = "Run")
   int32 CurrentFloorIndex;
 
   UPROPERTY(VisibleAnywhere, Category = "Map")
-  TMap<FRoomPosition, FMinimapRoomData> MinimapData;
+  TMap<int32, FFloorSaveData> FloorHistory;
 
-  // Critical for MapGenerator
-  // Saving this ensures we can regenerate the exact same floor if we crash/reload
-  UPROPERTY(VisibleAnywhere, Category = "World")
-  int32 CurrentDungeonSeed;
+  // Helper to get current floor data easily
+  FFloorSaveData& GetCurrentFloorData()
+  {
+    return FloorHistory.FindOrAdd(CurrentFloorIndex);
+  }
 };

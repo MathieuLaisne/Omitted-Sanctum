@@ -1,4 +1,4 @@
-// Fill out your copyright notice in the Description page of Project Settings.
+﻿// Fill out your copyright notice in the Description page of Project Settings.
 
 
 #include "MapGeneratorLibrary.h"
@@ -33,29 +33,21 @@ FString UMapGeneratorLibrary::ToString(const FOSRoomData& roomData)
 		string += *UEnum::GetValueAsString(types);
 		string += " ";
 	}
-	string += NeighboursToString(roomData.Connections);
+	string += RoomToString(roomData.Connections);
 	return string;
 }
 
-FString UMapGeneratorLibrary::NeighboursToString(const FOSRoomPossibleNeighbour& roomNeighbours)
+FString UMapGeneratorLibrary::RoomToString(const FOSRoomPossibleNeighbour& roomNeighbours)
 {
-	FString string = "(";
-	if (roomNeighbours.West)
-	{
-		string += "W,";
-	}
-	if (roomNeighbours.East)
-	{
-		string += "E,";
-	}
-	if (roomNeighbours.South)
-	{
-		string += "S,";
-	}
-	if (roomNeighbours.North)
-	{
-		string += "N,";
-	}
-	string += ")";
-	return string;
+	int32 Index = 0;
+	if (roomNeighbours.North) Index += 1;
+	if (roomNeighbours.South) Index += 2;
+	if (roomNeighbours.East)  Index += 4;
+	if (roomNeighbours.West)  Index += 8;
+
+	static const TCHAR Symbols[] = {
+				L' ', L'╵', L'╷', L'│', L'╶', L'└', L'┌', L'├', L'╴', L'┘', L'┐', L'┤', L'─', L'┴', L'┬', L'┼'
+	};
+
+	return FString::Printf(TEXT("%c"),Symbols[Index]);
 }

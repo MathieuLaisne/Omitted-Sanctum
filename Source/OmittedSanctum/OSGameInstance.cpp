@@ -1,6 +1,7 @@
 #include "OSGameInstance.h"
 #include "Kismet/GameplayStatics.h"
 #include "MapGeneration/MapGenerator.h"
+#include "MapGeneration/MapGeneratorLibrary.h"
 #include "OSPlayerState.h"
 
 void UOSGameInstance::SetSelectedClass(EOSPlayerClass NewClass)
@@ -8,20 +9,60 @@ void UOSGameInstance::SetSelectedClass(EOSPlayerClass NewClass)
   CurrentSelectedClass = NewClass;
 }
 
+bool UOSGameInstance::HasActiveRun()
+{
+  if (UGameplayStatics::DoesSaveGameExist("CurrentRun", 0))
+  {
+    CurrentSaveGame = Cast<UOSSaveGame>(UGameplayStatics::LoadGameFromSlot("CurrentRun", 0));
+  }
+  else
+  {
+    CurrentSaveGame = Cast<UOSSaveGame>(UGameplayStatics::CreateSaveGameObject(UOSSaveGame::StaticClass()));
+  }
+
+  return CurrentSaveGame->bHasActiveRun;
+}
+
+void UOSGameInstance::AdvanceToNextFloor()
+{
+  if (!CurrentSaveGame) return;
+
+  CurrentSaveGame->CurrentFloorIndex++;
+
+  FFloorSaveData& NewFloor = CurrentSaveGame->GetCurrentFloorData();
+  NewFloor.FloorSeed = FMath::Rand();
+
+  SaveCurrentRun();
+}
+
+void UOSGameInstance::GetToPreviousFloor()
+{
+  if (!CurrentSaveGame) return;
+
+  CurrentSaveGame->CurrentFloorIndex--;
+
+  SaveCurrentRun();
+}
+
+void UOSGameInstance::EndActiveRun()
+{
+  CurrentSaveGame->bHasActiveRun = false;
+  SaveCurrentRun();
+}
+
 void UOSGameInstance::CreateNewRun()
 {
-  // Create a fresh save object
-  CurrentSaveGame = Cast<UOSSaveGame>(UGameplayStatics::CreateSaveGameObject(UOSSaveGame::StaticClass()));
-
   if (CurrentSaveGame)
   {
     CurrentSaveGame->PlayerClass = CurrentSelectedClass;
     CurrentSaveGame->CurrentFloorIndex = 1;
+    CurrentSaveGame->FloorHistory.Empty();
 
     // Generate a fresh seed for the new run
-    CurrentSaveGame->CurrentDungeonSeed = FMath::Rand();
+    FFloorSaveData& NewFloor = CurrentSaveGame->GetCurrentFloorData();
+    NewFloor.FloorSeed = FMath::Rand();
 
-    CurrentSaveGame->MinimapData.Empty();
+    SaveCurrentRun();
 
     // Look up base stats from DataTable
     if (ClassDataTable)
@@ -83,10 +124,11 @@ void UOSGameInstance::RegisterRoomOnMinimap(FRoomPosition Pos, FOSRoomPossibleNe
   {
     // If it doesn't exist, add it as unexplored. 
     // If it exists, we just update doors (generation phase).
-    if (!CurrentSaveGame->MinimapData.Contains(Pos))
+    FFloorSaveData& CurrentData = CurrentSaveGame->GetCurrentFloorData();
+    if (!CurrentData.MinimapData.Contains(Pos))
     {
-      FMinimapRoomData NewData = FMinimapRoomData(false, OpenDoors);
-      CurrentSaveGame->MinimapData.Add(Pos, NewData);
+      FMinimapRoomData NewData = FMinimapRoomData(false, false, OpenDoors);
+      CurrentData.MinimapData.Add(Pos, NewData);
     }
   }
 }
@@ -95,11 +137,54 @@ void UOSGameInstance::MarkRoomAsExplored(FRoomPosition Pos)
 {
   if (CurrentSaveGame)
   {
-    FMinimapRoomData* Data = CurrentSaveGame->MinimapData.Find(Pos);
+    FFloorSaveData& CurrentData = CurrentSaveGame->GetCurrentFloorData();
+    FMinimapRoomData* Data = CurrentData.MinimapData.Find(Pos);
     if (Data)
     {
       Data->bIsExplored = true;
+      Data->bIsDiscovered = true;
+
+      if (Data->OpenDoors.East)
+      {
+        FMinimapRoomData* Eastern = CurrentData.MinimapData.Find(Pos + FRoomPosition(1, 0));
+        if (Eastern)
+          Eastern->bIsDiscovered = true;
+      }
+      if (Data->OpenDoors.West)
+      {
+        FMinimapRoomData* Western = CurrentData.MinimapData.Find(Pos + FRoomPosition(-1, 0));
+          if (Western)
+            Western->bIsDiscovered = true;
+      }
+      if (Data->OpenDoors.North)
+      {
+        FMinimapRoomData* Northern = CurrentData.MinimapData.Find(Pos + FRoomPosition(0, 1));
+          if (Northern)
+            Northern->bIsDiscovered = true;
+      }
+      if (Data->OpenDoors.South)
+      {
+        FMinimapRoomData* Southern = CurrentData.MinimapData.Find(Pos + FRoomPosition(0, -1));
+          if (Southern)
+            Southern->bIsDiscovered = true;
+      }
+
+      CurrentSaveGame->PlayerPosition = Pos;
+
+      FString positionStr = FString::Printf(TEXT("(%d, %d"), Pos.X, Pos.Y);
+      UE_LOG(LogTemp, Log, TEXT("Room %s %s was explored"), *positionStr, *UMapGeneratorLibrary::RoomToString(Data->OpenDoors));
+
     }
+    OnMinimapUpdate.Broadcast();
+  }
+}
+
+void UOSGameInstance::EmptyMap()
+{
+  if (CurrentSaveGame)
+  {
+    FFloorSaveData& CurrentData = CurrentSaveGame->GetCurrentFloorData();
+    CurrentData.MinimapData.Empty();
   }
 }
 
@@ -107,7 +192,8 @@ bool UOSGameInstance::IsRoomExplored(FRoomPosition Pos)
 {
   if (CurrentSaveGame)
   {
-    if (const FMinimapRoomData* Data = CurrentSaveGame->MinimapData.Find(Pos))
+    FFloorSaveData& CurrentData = CurrentSaveGame->GetCurrentFloorData();
+    if (const FMinimapRoomData* Data = CurrentData.MinimapData.Find(Pos))
     {
       return Data->bIsExplored;
     }
@@ -117,7 +203,8 @@ bool UOSGameInstance::IsRoomExplored(FRoomPosition Pos)
 
 FOSRoomPossibleNeighbour UOSGameInstance::GetRoomDoors(FRoomPosition Pos)
 {
-  return CurrentSaveGame->MinimapData[Pos].OpenDoors;
+  FFloorSaveData& CurrentData = CurrentSaveGame->GetCurrentFloorData();
+  return CurrentData.MinimapData[Pos].OpenDoors;
 }
 
 void UOSGameInstance::AddMetaCurrency(EOSPlayerClass ClassType, int32 Amount)
@@ -150,7 +237,7 @@ bool UOSGameInstance::PurchaseShopItem(EOSPlayerClass ClassType, FName ItemRowNa
   FOSClassMetaProgress& Progress = CurrentSaveGame->GetProgressFor(ClassType);
 
   // 3. Check specific conditions
-  if (Progress.UnlockedItemIDs.Contains(ItemRowName))
+  if (Progress.UnlockedItemIDs.Contains(FSaveItem(ShopItem->ItemName, ShopItem->ItemType)))
   {
     return false; // Already unlocked this unique item
   }
@@ -161,7 +248,7 @@ bool UOSGameInstance::PurchaseShopItem(EOSPlayerClass ClassType, FName ItemRowNa
     // Transaction
     Progress.MetaCurrency -= ShopItem->Price;
 
-    Progress.UnlockedItemIDs.Add(ItemRowName);
+    Progress.UnlockedItemIDs.Add(FSaveItem(ShopItem->ItemName, ShopItem->ItemType));
 
     SaveCurrentRun(); // Save immediately
     return true;
@@ -170,11 +257,18 @@ bool UOSGameInstance::PurchaseShopItem(EOSPlayerClass ClassType, FName ItemRowNa
   return false; // Not enough cash
 }
 
-bool UOSGameInstance::IsItemUnlocked(EOSPlayerClass ClassType, FName ItemRowName)
+bool UOSGameInstance::IsItemUnlocked(EOSPlayerClass ClassType, FSaveItem Item)
 {
   if (CurrentSaveGame)
   {
-    return CurrentSaveGame->GetProgressFor(ClassType).UnlockedItemIDs.Contains(ItemRowName);
+    return CurrentSaveGame->GetProgressFor(ClassType).UnlockedItemIDs.Contains(Item);
   }
   return false;
+}
+
+TArray<FSaveItem> UOSGameInstance::GetInventory()
+{
+  TArray<FSaveItem> Inventory = CurrentSaveGame->GetProgressFor(CurrentSelectedClass).UnlockedItemIDs;
+  Inventory.Append(CurrentSaveGame->InventoryItems);
+  return Inventory;
 }

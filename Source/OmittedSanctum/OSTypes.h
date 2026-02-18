@@ -37,6 +37,28 @@ struct FOSClassInfo : public FTableRowBase
   UTexture2D* ClassIcon;
 };
 
+
+USTRUCT(BlueprintType)
+struct FSaveItem
+{
+  GENERATED_BODY()
+
+  UPROPERTY(EditAnywhere, BlueprintReadWrite)
+  FString ItemName;
+
+  UPROPERTY(EditAnywhere, BlueprintReadWrite)
+  TEnumAsByte<EOSItemType> ItemType;
+
+  UPROPERTY(EditAnywhere, BlueprintReadWrite)
+  int Amount;
+
+  FSaveItem() : ItemName(""), ItemType(EOSItemType::Consumable), Amount(0) {};
+  FSaveItem(FString n, TEnumAsByte<EOSItemType> t) : ItemName(n), ItemType(t), Amount(1) {};
+  FSaveItem(FString n, TEnumAsByte<EOSItemType> t, int a) : ItemName(n), ItemType(t), Amount(a) {};
+
+  bool operator==(const FSaveItem& Other) const { return ItemName == Other.ItemName && ItemType == Other.ItemType; };
+};
+
 USTRUCT(BlueprintType)
 struct FOSClassMetaProgress
 {
@@ -48,7 +70,7 @@ struct FOSClassMetaProgress
 
   // List of Item IDs (Row Names) that this class has unlocked in the shop
   UPROPERTY(EditAnywhere, BlueprintReadWrite)
-  TArray<FName> UnlockedItemIDs;
+  TArray<FSaveItem> UnlockedItemIDs;
 };
 
 /**
@@ -60,10 +82,13 @@ struct FOSShopItem : public FTableRowBase
   GENERATED_BODY()
 
   UPROPERTY(EditAnywhere, BlueprintReadWrite)
-  FText ItemName;
+  FString ItemName;
 
   UPROPERTY(EditAnywhere, BlueprintReadWrite)
-  FText Description;
+  FString Description;
+
+  UPROPERTY(EditAnywhere, BlueprintReadWrite)
+  TEnumAsByte<EOSItemType> ItemType;
 
   UPROPERTY(EditAnywhere, BlueprintReadWrite)
   int32 Price = 100;
@@ -79,18 +104,28 @@ struct FMinimapRoomData
 
   UPROPERTY(EditAnywhere, BlueprintReadWrite)
   bool bIsExplored = false;
+  UPROPERTY(EditAnywhere, BlueprintReadWrite)
+  bool bIsDiscovered = false;
 
   // We store the connections here so the UI knows where to draw lines/openings
   UPROPERTY(EditAnywhere, BlueprintReadWrite)
   FOSRoomPossibleNeighbour OpenDoors;
 
   FMinimapRoomData() {};
-  FMinimapRoomData(bool bExplored, FOSRoomPossibleNeighbour Doors)
-    : bIsExplored(bExplored), OpenDoors(Doors) {
+  FMinimapRoomData(bool bExplored, bool bDiscovered, FOSRoomPossibleNeighbour Doors)
+    : bIsExplored(bExplored), bIsDiscovered(bDiscovered), OpenDoors(Doors) {
   }
+
 };
 
-//FORCEINLINE uint32 GetTypeHash(const FMinimapRoomData& MapData)
-//{
-//  return HashCombine(GetTypeHash(MapData.bIsExplored), GetTypeHash(MapData.OpenDoors));
-//};
+USTRUCT(BlueprintType)
+struct FFloorSaveData
+{
+  GENERATED_BODY()
+
+  UPROPERTY(VisibleAnywhere)
+  int32 FloorSeed; // The seed used to generate this specific floor
+
+  UPROPERTY(VisibleAnywhere)
+  TMap<FRoomPosition, FMinimapRoomData> MinimapData; // The map for this specific floor
+};

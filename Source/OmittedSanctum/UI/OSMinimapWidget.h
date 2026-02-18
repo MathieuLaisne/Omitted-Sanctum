@@ -17,21 +17,25 @@ public:
 	virtual int32 NativePaint(const FPaintArgs& Args, const FGeometry& AllottedGeometry, const FSlateRect& MyCullingRect, FSlateWindowElementList& OutDrawElements, int32 LayerId, const FWidgetStyle& InWidgetStyle, bool bParentEnabled) const override;
 
 	UPROPERTY(EditAnywhere, Category = "Minimap Settings")
-	float RoomSize = 32.0f;
+	float CellSize = 10.0f;
 
-	UPROPERTY(EditAnywhere, Category = "Minimap Settings")
-	float LineThickness = 2.0f;
+	UPROPERTY(EditAnywhere, Category = "Minimap Settings", meta = (ClampMin = 0.1, ClampMax = 1.0))
+	float RoomScale = 0.7f;
 
 	UPROPERTY(EditAnywhere, Category = "Minimap Settings")
 	FLinearColor ExploredColor = FLinearColor::White;
 
 	UPROPERTY(EditAnywhere, Category = "Minimap Settings")
-	FLinearColor UnexploredColor = FLinearColor(0.2f, 0.2f, 0.2f, 0.5f);
+	FLinearColor CurrentRoomColor = FLinearColor::Green;
+
+	UPROPERTY(EditAnywhere, Category = "Minimap Settings")
+	FLinearColor UnexploredColor = FLinearColor(0.2f, 0.2f, 0.2f, 1.0f);
 
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Minimap Style")
 	FSlateBrush RoomBrush;
 
-	// Cache the GameInstance for performance
-	UPROPERTY()
-	UOSGameInstance* GI;
+protected:
+	UFUNCTION(BlueprintCallable)
+	void HandleMinimapUpdate();
+
 };
