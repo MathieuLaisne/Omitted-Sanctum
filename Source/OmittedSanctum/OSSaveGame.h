@@ -5,6 +5,7 @@
 #include "CoreMinimal.h"
 #include "GameFramework/SaveGame.h"
 #include "OSTypes.h"
+#include "MagicSystem/MagicHelper.h"
 #include "OSSaveGame.generated.h"
 
 /**
@@ -45,6 +46,9 @@ public:
 
   UPROPERTY(VisibleAnywhere, Category = "Player")
   TArray<FSaveItem> InventoryItems;
+
+  UPROPERTY(VisibleAnywhere, Category = "Magic")
+  TArray<FOSMagicSpell> RecordedSpells;
 
   // --- Dungeon State ---
   UPROPERTY(VisibleAnywhere, Category = "Run")

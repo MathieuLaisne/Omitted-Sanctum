@@ -65,6 +65,47 @@ enum EOSMagicEffects
 	Weak				UMETA(DisplayName = "Weak")
 };
 
+UENUM(BlueprintType)
+enum EOSMagicWord
+{
+	//Elements
+	Kah UMETA(DisplayName = "Kah"),
+	Fah UMETA(DisplayName = "Fah"),
+	Tah UMETA(DisplayName = "Tah"),
+	Mah UMETA(DisplayName = "Mah"),
+	Yah UMETA(DisplayName = "Yah"),
+	//Form
+	Ti UMETA(DisplayName = "Ti"),
+	Li UMETA(DisplayName = "Li"),
+	Pi UMETA(DisplayName = "Pi"),
+	Bi UMETA(DisplayName = "Bi"),
+	Fi UMETA(DisplayName = "Fi"),
+	//Add-ons
+	Mor UMETA(DisplayName = "Mor"),
+	Tor UMETA(DisplayName = "Tor"),
+	Kor UMETA(DisplayName = "Kor"),
+	Gor UMETA(DisplayName = "Gor"),
+	Yor UMETA(DisplayName = "Yor")
+};
+
+USTRUCT(BlueprintType)
+struct OMITTEDSANCTUM_API FOSMagicSpell
+{
+	GENERATED_USTRUCT_BODY()
+
+	FOSMagicSpell() : ElementalWord(EOSMagicWord::Kah), FormWord(EOSMagicWord::Ti) {};
+
+public:
+	TEnumAsByte<EOSMagicWord> ElementalWord;
+	TEnumAsByte<EOSMagicWord> FormWord;
+	TArray<TEnumAsByte<EOSMagicWord>> ModifierWords;
+
+	bool operator==(const FOSMagicSpell& Other) const
+	{
+		return ElementalWord == Other.ElementalWord && FormWord == Other.FormWord && ModifierWords == Other.ModifierWords;
+	}
+};
+
 USTRUCT(BlueprintType)
 struct OMITTEDSANCTUM_API FOSEffectStrength
 {

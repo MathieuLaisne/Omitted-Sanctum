@@ -158,13 +158,13 @@ void UOSGameInstance::MarkRoomAsExplored(FRoomPosition Pos)
       }
       if (Data->OpenDoors.North)
       {
-        FMinimapRoomData* Northern = CurrentData.MinimapData.Find(Pos + FRoomPosition(0, 1));
+        FMinimapRoomData* Northern = CurrentData.MinimapData.Find(Pos + FRoomPosition(0, -1));
           if (Northern)
             Northern->bIsDiscovered = true;
       }
       if (Data->OpenDoors.South)
       {
-        FMinimapRoomData* Southern = CurrentData.MinimapData.Find(Pos + FRoomPosition(0, -1));
+        FMinimapRoomData* Southern = CurrentData.MinimapData.Find(Pos + FRoomPosition(0, 1));
           if (Southern)
             Southern->bIsDiscovered = true;
       }

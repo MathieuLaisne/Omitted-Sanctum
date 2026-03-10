@@ -193,6 +193,12 @@ void AOSMapGenerator::GenerateDungeon()
 		GI->RegisterRoomOnMinimap(room.Key, GetRotatedConnections(room.Value.RoomDataPtr->Connections, RotSteps));
 	}
 	UE_LOG(LogTemp, Warning, TEXT("%s"), *DebugStr);
+
+
+	if (GI)
+	{
+		GI->MarkRoomAsExplored(FRoomPosition(0, 0));
+	}
 }
 
 FRoomCandidateResult AOSMapGenerator::FindCompatibleRoom(const FRoomPosition& Pos, const TArray<FOSRoomData*>& AvailableRows, bool bForceDeadEnd)
