@@ -6,6 +6,7 @@
 #include "GameFramework/Actor.h"
 #include "../Items/Item.h"
 #include "AbilitySystemInterface.h"
+#include "MagicHelper.h"
 #include "OSSpellbook.generated.h"
 
 UCLASS()
@@ -29,6 +30,9 @@ public:
 		 /** Returns our Ability System Component. */
 	virtual UAbilitySystemComponent* GetAbilitySystemComponent() const override;
 	//~ End IAbilitySystemInterface
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Magic")
+	FOSMagicSpell Spell;
 
 	/** Ability System Component. Required to use Gameplay Attributes and Gameplay Abilities. */
 	UPROPERTY(VisibleDefaultsOnly, BlueprintReadOnly, Category = "Abilities")

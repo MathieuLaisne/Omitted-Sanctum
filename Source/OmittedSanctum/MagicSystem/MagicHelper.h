@@ -96,8 +96,11 @@ struct OMITTEDSANCTUM_API FOSMagicSpell
 	FOSMagicSpell() : ElementalWord(EOSMagicWord::Kah), FormWord(EOSMagicWord::Ti) {};
 
 public:
+	UPROPERTY(EditAnywhere, BlueprintReadWrite)
 	TEnumAsByte<EOSMagicWord> ElementalWord;
+	UPROPERTY(EditAnywhere, BlueprintReadWrite)
 	TEnumAsByte<EOSMagicWord> FormWord;
+	UPROPERTY(EditAnywhere, BlueprintReadWrite)
 	TArray<TEnumAsByte<EOSMagicWord>> ModifierWords;
 
 	bool operator==(const FOSMagicSpell& Other) const
@@ -180,4 +183,35 @@ public:
 	UPROPERTY(EditAnywhere, BlueprintReadWrite)
 	TEnumAsByte<EOSMagicResWeak> Relation;
 
+};
+
+UCLASS()
+class OMITTEDSANCTUM_API UMagicHelperLibrary : public UBlueprintFunctionLibrary
+{
+	GENERATED_BODY()
+
+public:
+
+	UFUNCTION(BlueprintCallable)
+	static FString GetSpellName(FOSMagicSpell spell)
+	{
+		FString base = UEnum::GetValueAsString(spell.ElementalWord) + " " + UEnum::GetValueAsString(spell.FormWord);
+		for (EOSMagicWord Word : spell.ModifierWords)
+		{
+			base += " " + UEnum::GetValueAsString(Word);
+		}
+		return base;
+	}
+
+	UFUNCTION(BlueprintCallable)
+	static bool SpellContainWord(FOSMagicSpell spell, EOSMagicWord word)
+	{
+		if (spell.ElementalWord == word)
+			return true;
+		if (spell.FormWord == word)
+			return true;
+		if (spell.ModifierWords.Contains(word))
+			return true;
+		return false;
+	}
 };
