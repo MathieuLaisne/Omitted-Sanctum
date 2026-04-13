@@ -14,6 +14,30 @@ enum class EOSPlayerClass : uint8
   Scholar       UMETA(DisplayName = "The Scholar")
 };
 
+USTRUCT(BlueprintType)
+struct FSaveItem
+{
+  GENERATED_BODY()
+
+  UPROPERTY(EditAnywhere, BlueprintReadWrite)
+  FString ItemName;
+
+  UPROPERTY(EditAnywhere, BlueprintReadWrite)
+  TEnumAsByte<EOSItemType> ItemType;
+
+  UPROPERTY(EditAnywhere, BlueprintReadWrite)
+  int Amount;
+
+  UPROPERTY(EditAnywhere, BlueprintReadWrite)
+  TSubclassOf<AItem> ItemClass;
+
+  FSaveItem() : ItemName(""), ItemType(EOSItemType::Consumable), Amount(0) {};
+  FSaveItem(FString n, TEnumAsByte<EOSItemType> t) : ItemName(n), ItemType(t), Amount(1) {};
+  FSaveItem(FString n, TEnumAsByte<EOSItemType> t, int a) : ItemName(n), ItemType(t), Amount(a) {};
+
+  bool operator==(const FSaveItem& Other) const { return ItemName == Other.ItemName && ItemType == Other.ItemType; };
+};
+
 /** Data Table Row for configuring class stats */
 USTRUCT(BlueprintType)
 struct FOSClassInfo : public FTableRowBase
@@ -31,32 +55,10 @@ struct FOSClassInfo : public FTableRowBase
 
   // Matches: First-Aid Kit, Gun, Grimoire, etc.
   UPROPERTY(EditAnywhere, BlueprintReadWrite)
-  TArray<TSubclassOf<AItem>> StartingItems;
+  TArray<FSaveItem> StartingItems;
 
   UPROPERTY(EditAnywhere, BlueprintReadWrite)
   UTexture2D* ClassIcon;
-};
-
-
-USTRUCT(BlueprintType)
-struct FSaveItem
-{
-  GENERATED_BODY()
-
-  UPROPERTY(EditAnywhere, BlueprintReadWrite)
-  FString ItemName;
-
-  UPROPERTY(EditAnywhere, BlueprintReadWrite)
-  TEnumAsByte<EOSItemType> ItemType;
-
-  UPROPERTY(EditAnywhere, BlueprintReadWrite)
-  int Amount;
-
-  FSaveItem() : ItemName(""), ItemType(EOSItemType::Consumable), Amount(0) {};
-  FSaveItem(FString n, TEnumAsByte<EOSItemType> t) : ItemName(n), ItemType(t), Amount(1) {};
-  FSaveItem(FString n, TEnumAsByte<EOSItemType> t, int a) : ItemName(n), ItemType(t), Amount(a) {};
-
-  bool operator==(const FSaveItem& Other) const { return ItemName == Other.ItemName && ItemType == Other.ItemType; };
 };
 
 USTRUCT(BlueprintType)
@@ -71,6 +73,9 @@ struct FOSClassMetaProgress
   // List of Item IDs (Row Names) that this class has unlocked in the shop
   UPROPERTY(EditAnywhere, BlueprintReadWrite)
   TArray<FSaveItem> UnlockedItemIDs;
+
+  FOSClassMetaProgress() : MetaCurrency(0), UnlockedItemIDs({}) {};
+  FOSClassMetaProgress(int amount, TArray<FSaveItem> items) : MetaCurrency(amount), UnlockedItemIDs(items) {};
 };
 
 /**

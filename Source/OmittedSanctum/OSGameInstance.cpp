@@ -4,6 +4,13 @@
 #include "MapGeneration/MapGeneratorLibrary.h"
 #include "OSPlayerState.h"
 
+
+UOSGameInstance::UOSGameInstance()
+{
+  ConstructorHelpers::FObjectFinder<UDataTable> METAPROGDT_BP(TEXT("/Script/Engine.DataTable'/Game/DataTables/DT_ClassInfo.DT_ClassInfo'"));
+  METAPROGDT = METAPROGDT_BP.Object;
+}
+
 void UOSGameInstance::SetSelectedClass(EOSPlayerClass NewClass)
 {
   CurrentSelectedClass = NewClass;
@@ -18,6 +25,14 @@ bool UOSGameInstance::HasActiveRun()
   else
   {
     CurrentSaveGame = Cast<UOSSaveGame>(UGameplayStatics::CreateSaveGameObject(UOSSaveGame::StaticClass()));
+
+    FOSClassMetaProgress ScholarMeta = FOSClassMetaProgress(0, METAPROGDT->FindRow<FOSClassInfo>("Scholar", "")->StartingItems);
+    FOSClassMetaProgress DetectiveMeta = FOSClassMetaProgress(0, METAPROGDT->FindRow<FOSClassInfo>("Detective", "")->StartingItems);
+    FOSClassMetaProgress DoctorMeta = FOSClassMetaProgress(0, METAPROGDT->FindRow<FOSClassInfo>("Doctor", "")->StartingItems);
+    
+    CurrentSaveGame->ClassProgressMap.Add({ EOSPlayerClass::Scholar, ScholarMeta });
+    CurrentSaveGame->ClassProgressMap.Add({ EOSPlayerClass::Detective, DetectiveMeta });
+    CurrentSaveGame->ClassProgressMap.Add({ EOSPlayerClass::Doctor, DoctorMeta });
   }
 
   return CurrentSaveGame->bHasActiveRun;
@@ -62,7 +77,7 @@ void UOSGameInstance::CreateNewRun()
     FFloorSaveData& NewFloor = CurrentSaveGame->GetCurrentFloorData();
     NewFloor.FloorSeed = FMath::Rand();
 
-    SaveCurrentRun();
+    CurrentSaveGame->RecordedSpells.Empty();
 
     // Look up base stats from DataTable
     if (ClassDataTable)
@@ -79,6 +94,9 @@ void UOSGameInstance::CreateNewRun()
     {
       CurrentSaveGame->CurrentHP = 100;
     }
+
+
+    SaveCurrentRun();
   }
 }
 
@@ -205,6 +223,68 @@ FOSRoomPossibleNeighbour UOSGameInstance::GetRoomDoors(FRoomPosition Pos)
 {
   FFloorSaveData& CurrentData = CurrentSaveGame->GetCurrentFloorData();
   return CurrentData.MinimapData[Pos].OpenDoors;
+}
+
+bool UOSGameInstance::HasGrimoire()
+{
+  // Search the combined inventory (Meta unlocks + current run items)
+  TArray<FSaveItem> Inventory = GetInventory();
+  for (const FSaveItem& Item : Inventory)
+  {
+    if (Item.ItemName.Equals(TEXT("Grimoire"), ESearchCase::IgnoreCase))
+    {
+      return true;
+    }
+  }
+  return false;
+}
+
+void UOSGameInstance::RecordSpell(FOSMagicSpell NewSpell)
+{
+  if (!CurrentSaveGame) return;
+
+  if (CurrentSaveGame->RecordedSpells.Contains(NewSpell))
+  {
+    return;
+  }
+
+  if (!HasGrimoire())
+  {
+    CurrentSaveGame->RecordedSpells.Empty();
+    CurrentSaveGame->RecordedSpells.Add(NewSpell);
+    CurrentSaveGame->ActiveSpellIndex = 0;
+    SaveCurrentRun();
+    return;
+  }
+
+  CurrentSaveGame->RecordedSpells.Add(NewSpell);
+
+  // Auto-equip if it's their first spell
+  if (CurrentSaveGame->ActiveSpellIndex == -1)
+  {
+    CurrentSaveGame->ActiveSpellIndex = 0;
+  }
+
+  SaveCurrentRun();
+}
+
+int32 UOSGameInstance::GetActiveSpellIndex()
+{
+  return CurrentSaveGame->ActiveSpellIndex;
+}
+
+void UOSGameInstance::SetActiveSpell(int32 SpellIndex)
+{
+  if (CurrentSaveGame && CurrentSaveGame->RecordedSpells.IsValidIndex(SpellIndex))
+  {
+    CurrentSaveGame->ActiveSpellIndex = SpellIndex;
+    SaveCurrentRun();
+  }
+}
+
+void UOSGameInstance::GetAllSpells(TArray<FOSMagicSpell>& OutAllSpells)
+{
+  OutAllSpells = CurrentSaveGame->RecordedSpells;
 }
 
 void UOSGameInstance::AddMetaCurrency(EOSPlayerClass ClassType, int32 Amount)

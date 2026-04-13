@@ -19,6 +19,10 @@ class OMITTEDSANCTUM_API UOSGameInstance : public UGameInstance
 	GENERATED_BODY()
 
 public:
+  UOSGameInstance();
+
+  UDataTable* METAPROGDT;
+
   UFUNCTION(BlueprintCallable, Category = "Game Flow")
   void SetSelectedClass(EOSPlayerClass NewClass);
 
@@ -80,6 +84,28 @@ public:
 
   UPROPERTY(BlueprintAssignable, Category = "Events")
   FOnMinimapUpdate OnMinimapUpdate;
+#pragma endregion
+
+#pragma region MagicSystem
+  // Checks if the player currently holds the Grimoire
+  UFUNCTION(BlueprintCallable, Category = "MagicSystem")
+  bool HasGrimoire();
+
+  // Attempts to record a spell. Returns true if successful, false if they don't have a Grimoire or already know it.
+  UFUNCTION(BlueprintCallable, Category = "MagicSystem")
+  void RecordSpell(FOSMagicSpell NewSpell);
+
+  // Gets the currently active spell. Returns false if no spell is equipped.
+  UFUNCTION(BlueprintCallable, Category = "MagicSystem")
+  int32 GetActiveSpellIndex();
+
+  // Sets the active spell by index (from the RecordedSpells array)
+  UFUNCTION(BlueprintCallable, Category = "MagicSystem")
+  void SetActiveSpell(int32 SpellIndex);
+
+  //Get all the spells with active spell set on 0
+  UFUNCTION(BlueprintCallable, Category = "MagicSystem")
+  void GetAllSpells(TArray<FOSMagicSpell>& OutAllSpells);
 #pragma endregion
 
 #pragma region Meta

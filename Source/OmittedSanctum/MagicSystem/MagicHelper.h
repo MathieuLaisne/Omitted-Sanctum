@@ -68,6 +68,7 @@ enum EOSMagicEffects
 UENUM(BlueprintType)
 enum EOSMagicWord
 {
+	EMPTY UMETA(DisplayName = "Empty"),
 	//Elements
 	Kah UMETA(DisplayName = "Kah"),
 	Fah UMETA(DisplayName = "Fah"),
@@ -93,7 +94,7 @@ struct OMITTEDSANCTUM_API FOSMagicSpell
 {
 	GENERATED_USTRUCT_BODY()
 
-	FOSMagicSpell() : ElementalWord(EOSMagicWord::Kah), FormWord(EOSMagicWord::Ti) {};
+	FOSMagicSpell() : ElementalWord(EOSMagicWord::EMPTY), FormWord(EOSMagicWord::EMPTY) {};
 
 public:
 	UPROPERTY(EditAnywhere, BlueprintReadWrite)
@@ -213,5 +214,11 @@ public:
 		if (spell.ModifierWords.Contains(word))
 			return true;
 		return false;
+	}
+
+	UFUNCTION(BlueprintCallable)
+	static bool SpellIsValid(FOSMagicSpell spell)
+	{
+		return !(spell.ElementalWord == EOSMagicWord::EMPTY || spell.FormWord == EOSMagicWord::EMPTY);
 	}
 };

@@ -50,6 +50,9 @@ public:
   UPROPERTY(VisibleAnywhere, Category = "Magic")
   TArray<FOSMagicSpell> RecordedSpells;
 
+  UPROPERTY(VisibleAnywhere, BlueprintReadWrite, Category = "Magic")
+  int32 ActiveSpellIndex = -1;
+
   // --- Dungeon State ---
   UPROPERTY(VisibleAnywhere, Category = "Run")
   bool bHasActiveRun;
