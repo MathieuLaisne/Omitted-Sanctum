@@ -11,12 +11,14 @@ ARoom::ARoom()
 	USceneComponent* Root = CreateDefaultSubobject<USceneComponent>(TEXT("Root"));
 
 	MeshComponent = CreateDefaultSubobject<UStaticMeshComponent>(TEXT("RoomMesh"));
+	MeshComponent->SetCollisionProfileName(TEXT("BlockAll"));
 	MeshComponent->SetupAttachment(Root);
 
 	PositionText = CreateDefaultSubobject<UTextRenderComponent>(TEXT("PositionText"));
 	PositionText->SetupAttachment(Root);
 
-	ExplorationTrigger = CreateDefaultSubobject<UBoxComponent>(TEXT("ExplorationTrigger"));
+	ExplorationTrigger = CreateDefaultSubobject<UBoxComponent>(TEXT("ExplorationTrigger")); 
+	ExplorationTrigger->SetCollisionProfileName(TEXT("OverlapPawnOnly"));
 	ExplorationTrigger->SetupAttachment(Root);
 
 	RootComponent = Root;

@@ -9,6 +9,11 @@ AItem::AItem()
  	// Set this actor to call Tick() every frame.  You can turn this off to improve performance if you don't need it.
 	PrimaryActorTick.bCanEverTick = true;
 
+	USceneComponent* Root = CreateDefaultSubobject<USceneComponent>(TEXT("Root"));
+
+	InteractionTrigger = CreateDefaultSubobject<USphereComponent>(TEXT("InteractionTrigger"));
+	InteractionTrigger->SetupAttachment(Root);
+	InteractionTrigger->SetCollisionProfileName(TEXT("Item"));
 }
 
 // Called when the game starts or when spawned

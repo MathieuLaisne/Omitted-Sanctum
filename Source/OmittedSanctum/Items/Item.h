@@ -4,6 +4,7 @@
 
 #include "CoreMinimal.h"
 #include "GameFramework/Actor.h"
+#include "Components/DrawSphereComponent.h"
 #include "Item.generated.h"
 
 UCLASS()
@@ -14,6 +15,15 @@ class OMITTEDSANCTUM_API AItem : public AActor
 public:	
 	// Sets default values for this actor's properties
 	AItem();
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "UI")
+	USphereComponent* InteractionTrigger;
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category="UI")
+	FString ItemName = "Basic Item Template";
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "UI")
+	FString ItemDesc = "Basic Item's Description succintly telling the player what it does";
 
 protected:
 	// Called when the game starts or when spawned
