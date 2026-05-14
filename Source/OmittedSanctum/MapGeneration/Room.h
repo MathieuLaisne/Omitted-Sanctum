@@ -5,7 +5,6 @@
 #include "CoreMinimal.h"
 #include "GameFramework/Actor.h"
 #include "Components/TextRenderComponent.h"
-#include "OmittedSanctum/OSItemAvailable.h"
 #include "RoomStructures.h"
 #include "OmittedSanctum/Items/ItemSpawnPoint.h"
 #include "Components/BoxComponent.h"
@@ -58,7 +57,7 @@ protected:
 
 public:	
 	// Called every frame
-	void Initialize(int& amountLeftWeapon, int& amountLeftSpellbook, TSet<UClass*>& GlobalSpawnedLoreItems, const TArray<FOSItemAvailable*>& GlobalFloorItems);
+	void Initialize(int& amountLeftWeapon, int& amountLeftSpellbook, TSet<UClass*>& GlobalSpawnedLoreItems, const TArray<FOSItemData*>& GlobalFloorItems);
 
 	void DestroySpawnedItems();
 
@@ -66,6 +65,6 @@ public:
 	void OnEntered(class UPrimitiveComponent* ThisComp, class AActor* OtherActor, class UPrimitiveComponent* OtherComp, int32 OtherBodyIndex, bool bFromSweep, const FHitResult& SweepResult);
 
 private:
-	TArray<FOSItemAvailable*> GetAllItemRows();
+	TArray<FOSItemData*> GetAllItemRows();
 
 };

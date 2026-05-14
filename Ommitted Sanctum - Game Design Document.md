@@ -523,8 +523,10 @@ He has been researching a peculiar book simply titled “The Grimoire” which c
 
 ### 7.2. Supporting characters {#7.2.-supporting-characters}
 
-**The Shopkeeper**:   
+#### The Shopkeeper 
 He is joyful yet mysterious. He doesn’t appear during the first exploration, but at the second he says he was always here and it’s the first time he sees you. He explains how he saw lots of people going in there and they always looked like they needed some help so he decided to set shop right here.
+He offers his items in exchange for the currency only findable in the manor.
+He'll comment on whatever item is focused on while in his shop and say something when the player buys the item.
 
 ### 7.3. Enemies {#7.3.-enemies}
 

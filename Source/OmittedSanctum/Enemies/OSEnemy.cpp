@@ -3,7 +3,8 @@
 
 #include "OSEnemy.h"
 #include "GameFramework/CharacterMovementComponent.h"
-#include "OSPlayerState.h"
+#include "OmittedSanctum/OSPlayerState.h"
+#include "OmittedSanctum/OSGameInstance.h"
 
 // Sets default values
 AOSEnemy::AOSEnemy()
@@ -73,8 +74,12 @@ void AOSEnemy::ApplyMagicDamage(FString Element, int HitDamage, TArray<FOSEffect
 void AOSEnemy::Damage(int amount)
 {
 	CurrentHP -= amount;
+	MakeOSNoise(HitNoiseLevel);
 	if (CurrentHP <= 0)
+	{
 		Die();
+		MakeOSNoise(DeathNoiseLevel);
+	}
 	else
 		OnDamage(amount);
 }
@@ -92,5 +97,17 @@ void AOSEnemy::Attack_Implementation()
 	if (CurPlayerState)
 	{
 		CurPlayerState->OSTakeDamage(FMath::RoundToInt(Strength * WeakMult));
+	}
+
+	MakeOSNoise(AttackingNoiseLevel);
+}
+
+void AOSEnemy::MakeOSNoise(EOSNoiseLevel Level)
+{
+	if (Level == EOSNoiseLevel::Silent) return;
+
+	if (UOSGameInstance* GI = Cast<UOSGameInstance>(GetGameInstance()))
+	{
+		GI->BroadcastNoise(this, GetActorLocation(), Level);
 	}
 }

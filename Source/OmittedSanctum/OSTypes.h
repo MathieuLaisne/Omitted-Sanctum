@@ -2,9 +2,20 @@
 
 #include "CoreMinimal.h"
 #include "Engine/DataTable.h"
-#include "Items/Item.h"
 #include "MapGeneration/RoomStructures.h"
 #include "OSTypes.generated.h"
+
+class AItem;
+
+#pragma region Enums
+UENUM(BlueprintType)
+enum EOSItemType
+{
+	Lore,
+	Consumable,
+	Weapon,
+	Spellbook
+};
 
 UENUM(BlueprintType)
 enum class EOSPlayerClass : uint8
@@ -14,28 +25,45 @@ enum class EOSPlayerClass : uint8
   Scholar       UMETA(DisplayName = "The Scholar")
 };
 
+UENUM(BlueprintType)
+enum class EOSNoiseLevel : uint8
+{
+  Silent        UMETA(DisplayName = "Silent"),
+  Faint         UMETA(DisplayName = "Faint"),
+  Noisy         UMETA(DisplayName = "Noisy"),
+  Loud          UMETA(DisplayName = "Loud")
+};
+#pragma endregion
+
+#pragma region Structs
 USTRUCT(BlueprintType)
-struct FSaveItem
+struct FOSItemData : public FTableRowBase
 {
   GENERATED_BODY()
 
   UPROPERTY(EditAnywhere, BlueprintReadWrite)
   FString ItemName;
-
+  UPROPERTY(EditAnywhere, BlueprintReadWrite)
+  FString Description;
   UPROPERTY(EditAnywhere, BlueprintReadWrite)
   TEnumAsByte<EOSItemType> ItemType;
+  UPROPERTY(EditAnywhere, BlueprintReadWrite)
+  int32 Amount = 1;
+  UPROPERTY(EditAnywhere, BlueprintReadWrite)
+  int32 Price = 100;
+  UPROPERTY(EditAnywhere, BlueprintReadWrite)
+  UTexture2D* Icon = nullptr;
+  UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Shopkeeper")
+  TArray<FText> ShopkeeperFocusLines;
+  UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Shopkeeper")
+  TArray<FText> ShopkeeperPurchaseLines;
 
   UPROPERTY(EditAnywhere, BlueprintReadWrite)
-  int Amount;
+  TSubclassOf<AItem> ItemClass = nullptr;
 
-  UPROPERTY(EditAnywhere, BlueprintReadWrite)
-  TSubclassOf<AItem> ItemClass;
-
-  FSaveItem() : ItemName(""), ItemType(EOSItemType::Consumable), Amount(0) {};
-  FSaveItem(FString n, TEnumAsByte<EOSItemType> t) : ItemName(n), ItemType(t), Amount(1) {};
-  FSaveItem(FString n, TEnumAsByte<EOSItemType> t, int a) : ItemName(n), ItemType(t), Amount(a) {};
-
-  bool operator==(const FSaveItem& Other) const { return ItemName == Other.ItemName && ItemType == Other.ItemType; };
+  FOSItemData() : ItemName(""), Description(""), ItemType(EOSItemType::Consumable), Amount(1), Price(100), Icon(nullptr), ItemClass(nullptr) {}
+  FOSItemData(FString n, TEnumAsByte<EOSItemType> t, int a) : ItemName(n), Description(""), ItemType(t), Amount(a), Price(100), Icon(nullptr), ItemClass(nullptr) {}
+  bool operator==(const FOSItemData& Other) const { return ItemName == Other.ItemName && ItemType == Other.ItemType; }
 };
 
 /** Data Table Row for configuring class stats */
@@ -55,7 +83,7 @@ struct FOSClassInfo : public FTableRowBase
 
   // Matches: First-Aid Kit, Gun, Grimoire, etc.
   UPROPERTY(EditAnywhere, BlueprintReadWrite)
-  TArray<FSaveItem> StartingItems;
+  TArray<FOSItemData> StartingItems;
 
   UPROPERTY(EditAnywhere, BlueprintReadWrite)
   UTexture2D* ClassIcon;
@@ -72,34 +100,10 @@ struct FOSClassMetaProgress
 
   // List of Item IDs (Row Names) that this class has unlocked in the shop
   UPROPERTY(EditAnywhere, BlueprintReadWrite)
-  TArray<FSaveItem> UnlockedItemIDs;
+  TArray<FOSItemData> UnlockedItemIDs;
 
   FOSClassMetaProgress() : MetaCurrency(0), UnlockedItemIDs({}) {};
-  FOSClassMetaProgress(int amount, TArray<FSaveItem> items) : MetaCurrency(amount), UnlockedItemIDs(items) {};
-};
-
-/**
- * Defines an item sold in the Meta-Shop.
- */
-USTRUCT(BlueprintType)
-struct FOSShopItem : public FTableRowBase
-{
-  GENERATED_BODY()
-
-  UPROPERTY(EditAnywhere, BlueprintReadWrite)
-  FString ItemName;
-
-  UPROPERTY(EditAnywhere, BlueprintReadWrite)
-  FString Description;
-
-  UPROPERTY(EditAnywhere, BlueprintReadWrite)
-  TEnumAsByte<EOSItemType> ItemType;
-
-  UPROPERTY(EditAnywhere, BlueprintReadWrite)
-  int32 Price = 100;
-
-  UPROPERTY(EditAnywhere, BlueprintReadWrite)
-  UTexture2D* Icon;
+  FOSClassMetaProgress(int amount, TArray<FOSItemData> items) : MetaCurrency(amount), UnlockedItemIDs(items) {};
 };
 
 USTRUCT(BlueprintType)
@@ -134,3 +138,4 @@ struct FFloorSaveData
   UPROPERTY(VisibleAnywhere)
   TMap<FRoomPosition, FMinimapRoomData> MinimapData; // The map for this specific floor
 };
+#pragma endregion

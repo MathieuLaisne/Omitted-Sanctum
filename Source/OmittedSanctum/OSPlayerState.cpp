@@ -7,6 +7,12 @@ void AOSPlayerState::OSTakeDamage(int dmg)
 {
   float damageReduction = StatusComponent->GetIncomingDamageMultiplier();
   CurrentHP -= FMath::RoundToInt(dmg * damageReduction);
+
+  if (UOSGameInstance* GI = Cast<UOSGameInstance>(GetGameInstance()))
+  {
+    GI->BroadcastNoise(GetPawn(), GetPawn() ? GetPawn()->GetActorLocation() : FVector::ZeroVector, EOSNoiseLevel::Noisy);
+  }
+
   if (CurrentHP <= 0)
     GameOver();
   else

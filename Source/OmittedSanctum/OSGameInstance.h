@@ -9,6 +9,8 @@
 #include "OSGameInstance.generated.h"
 
 DECLARE_DYNAMIC_MULTICAST_DELEGATE(FOnMinimapUpdate);
+DECLARE_DYNAMIC_MULTICAST_DELEGATE_ThreeParams(FOSOnNoiseMade, AActor*, NoiseMaker, const FVector&, Location, EOSNoiseLevel, NoiseLevel);
+DECLARE_DYNAMIC_MULTICAST_DELEGATE_OneParam(FOSOnShopkeeperSpeak, FText, Text);
 
 /**
  * 
@@ -124,14 +126,26 @@ public:
 
   // Checks if an item is already unlocked
   UFUNCTION(BlueprintCallable, Category = "MetaProgress")
-  bool IsItemUnlocked(EOSPlayerClass ClassType, FSaveItem Item);
+  bool IsItemUnlocked(EOSPlayerClass ClassType, FOSItemData Item);
 
   UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Data")
   UDataTable* ShopDataTable;
 #pragma endregion
 
   UFUNCTION(BlueprintCallable, Category = "Inventory")
-  TArray<FSaveItem> GetInventory();
+  TArray<FOSItemData> GetInventory();
+
+  UFUNCTION(BlueprintCallable, Category = "Inventory")
+  void PickedItem(FOSItemData itemData);
+
+  UPROPERTY(BlueprintAssignable, Category = "Events")
+  FOSOnNoiseMade OnNoiseMade;
+  
+  UPROPERTY(BlueprintAssignable, Category = "Events")
+  FOSOnShopkeeperSpeak OnShopkeeperSpeak;
+
+  UFUNCTION(BlueprintCallable, Category = "Events")
+  void BroadcastNoise(AActor* NoiseMaker, const FVector& Location, EOSNoiseLevel NoiseLevel);
 
 private:
   EOSPlayerClass CurrentSelectedClass;

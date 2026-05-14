@@ -32,7 +32,7 @@ void ARoom::BeginPlay()
 	ExplorationTrigger->OnComponentBeginOverlap.AddDynamic(this, &ARoom::OnEntered);
 }
 
-void ARoom::Initialize(int& amountLeftWeapon, int& amountLeftSpellbook, TSet<UClass*>& GlobalSpawnedLoreItems, const TArray<FOSItemAvailable*>& GlobalFloorItems)
+void ARoom::Initialize(int& amountLeftWeapon, int& amountLeftSpellbook, TSet<UClass*>& GlobalSpawnedLoreItems, const TArray<FOSItemData*>& GlobalFloorItems)
 {
 	FRandomStream RNG;
 	
@@ -40,29 +40,29 @@ void ARoom::Initialize(int& amountLeftWeapon, int& amountLeftSpellbook, TSet<UCl
 
 	GetComponents(ItemSpawns, true);
 
-	TArray<FOSItemAvailable*> AllRows;
+	TArray<FOSItemData*> AllRows;
 	if (ItemsPool == nullptr)
 		AllRows = GlobalFloorItems;
 	else// Creating a map by item type
 		AllRows = GetAllItemRows();
-	TMap<EOSItemType, TArray<FOSItemAvailable*>> ItemBuckets;
+	TMap<EOSItemType, TArray<FOSItemData*>> ItemBuckets;
 
-	for (FOSItemAvailable* Row : AllRows)
+	for (FOSItemData* Row : AllRows)
 	{
 		if (!Row) continue;
 
 		//Only add lore items which weren't added in the floor
-		if (Row->type == EOSItemType::Lore && GlobalSpawnedLoreItems.Contains(Row->ItemClass))
+		if (Row->ItemType == EOSItemType::Lore && GlobalSpawnedLoreItems.Contains(Row->ItemClass))
 		{
 			continue;
 		}
 
-		ItemBuckets.FindOrAdd(Row->type).Add(Row);
+		ItemBuckets.FindOrAdd(Row->ItemType).Add(Row);
 	}
 	// Shuffle the buckets themselves so we pull random items from them
 	for (auto& Pair : ItemBuckets)
 	{
-		TArray<FOSItemAvailable*>& Bucket = Pair.Value;
+		TArray<FOSItemData*>& Bucket = Pair.Value;
 		if (Bucket.Num() > 1)
 		{
 			int32 LastIndex = Bucket.Num() - 1;
@@ -111,11 +111,12 @@ void ARoom::Initialize(int& amountLeftWeapon, int& amountLeftSpellbook, TSet<UCl
 			// Fetch from our optimized buckets
 			if (ItemBuckets.Contains(itemTypeToFetch) && ItemBuckets[itemTypeToFetch].Num() > 0)
 			{
-				FOSItemAvailable* ItemFetched = ItemBuckets[itemTypeToFetch].Pop();
+				FOSItemData* ItemFetched = ItemBuckets[itemTypeToFetch].Pop();
 
 				if (ItemFetched && ItemFetched->ItemClass)
 				{
 					AItem* GeneratedItem = GetWorld()->SpawnActor<AItem>(ItemFetched->ItemClass, ItemSpawn->GetComponentTransform(), SpawnInfo);
+					GeneratedItem->SetItemData(*ItemFetched);
 					SpawnedItems.Add(GeneratedItem);
 
 					// Track Lore items globally to prevent duplicates
@@ -163,13 +164,13 @@ void ARoom::OnEntered(class UPrimitiveComponent* ThisComp, class AActor* OtherAc
 	}
 }
 
-TArray<FOSItemAvailable*> ARoom::GetAllItemRows()
+TArray<FOSItemData*> ARoom::GetAllItemRows()
 {
-	TArray<FOSItemAvailable*> Rows;
+	TArray<FOSItemData*> Rows;
 	if (ItemsPool)
 	{
 		FString Context;
-		ItemsPool->GetAllRows<FOSItemAvailable>(Context, Rows);
+		ItemsPool->GetAllRows<FOSItemData>(Context, Rows);
 	}
 	return Rows;
 }

@@ -5,6 +5,8 @@
 #include "CoreMinimal.h"
 #include "GameFramework/Actor.h"
 #include "Components/DrawSphereComponent.h"
+#include "OmittedSanctum/OSTypes.h"
+#include "Components/WidgetComponent.h"
 #include "Item.generated.h"
 
 UCLASS()
@@ -19,11 +21,14 @@ public:
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "UI")
 	USphereComponent* InteractionTrigger;
 
-	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category="UI")
-	FString ItemName = "Basic Item Template";
+	UFUNCTION(BlueprintCallable)
+	void SetItemData(FOSItemData data);
 
-	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "UI")
-	FString ItemDesc = "Basic Item's Description succintly telling the player what it does";
+	UFUNCTION(BlueprintCallable)
+	FOSItemData GetItemData();
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Item")
+	UWidgetComponent* Widget;
 
 protected:
 	// Called when the game starts or when spawned
@@ -33,13 +38,7 @@ public:
 	// Called every frame
 	virtual void Tick(float DeltaTime) override;
 
+private:
+	FOSItemData ItemData;
 };
 
-UENUM(BlueprintType)
-enum EOSItemType
-{
-	Lore,
-	Consumable,
-	Weapon,
-	Spellbook
-};

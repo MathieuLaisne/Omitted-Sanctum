@@ -3,8 +3,9 @@
 
 #include "MagicEntity.h"
 #include "NiagaraComponent.h"
-#include <OmittedSanctum/OSPlayerState.h>
-#include <Kismet/GameplayStatics.h>
+#include "OmittedSanctum/OSPlayerState.h"
+#include "Kismet/GameplayStatics.h"
+#include "OmittedSanctum/OSGameInstance.h"
 
 // Sets default values
 AMagicEntity::AMagicEntity()
@@ -64,6 +65,17 @@ void AMagicEntity::ApplyEffectToSelf()
 		}
 		else
 			break;
+	}
+}
+
+void AMagicEntity::MakeOSNoise(EOSNoiseLevel OverrideLevel)
+{
+	EOSNoiseLevel FinalLevel = (OverrideLevel == EOSNoiseLevel::Silent) ? NoiseLevel : OverrideLevel;
+	if (FinalLevel == EOSNoiseLevel::Silent) return;
+
+	if (UOSGameInstance* GI = Cast<UOSGameInstance>(GetGameInstance()))
+	{
+		GI->BroadcastNoise(this, GetActorLocation(), FinalLevel);
 	}
 }
 

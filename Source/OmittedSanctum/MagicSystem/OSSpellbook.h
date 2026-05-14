@@ -4,7 +4,7 @@
 
 #include "CoreMinimal.h"
 #include "GameFramework/Actor.h"
-#include "../Items/Item.h"
+#include "OmittedSanctum/Items/Item.h"
 #include "AbilitySystemInterface.h"
 #include "MagicHelper.h"
 #include "OSSpellbook.generated.h"

@@ -2,7 +2,7 @@
 
 
 #include "MagicArrow.h"
-#include "OmittedSanctum/OSEnemy.h"
+#include "OmittedSanctum/Enemies/OSEnemy.h"
 
 AMagicArrow::AMagicArrow()
 {
@@ -41,4 +41,6 @@ void AMagicArrow::OnOverlapBegin(UPrimitiveComponent* OverlappedComp, AActor* Ot
 	}
 	else if (OtherActor != GetInstigator())
 		Destroy();
+
+	MakeOSNoise(NoiseLevel);
 }

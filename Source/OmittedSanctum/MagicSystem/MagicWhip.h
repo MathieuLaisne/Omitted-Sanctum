@@ -7,7 +7,7 @@
 #include "GameFramework/ProjectileMovementComponent.h"
 #include "PhysicsEngine/PhysicsHandleComponent.h"
 #include "Components/SphereComponent.h"
-#include <OmittedSanctum/OSEnemy.h>
+#include "OmittedSanctum/Enemies/OSEnemy.h"
 #include "MagicWhip.generated.h"
 
 /**

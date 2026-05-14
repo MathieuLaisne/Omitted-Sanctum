@@ -5,6 +5,7 @@
 #include "GameFramework/Actor.h"
 #include "MagicHelper.h"
 #include "OSStatusEffectComponent.h"
+#include "OmittedSanctum/OSTypes.h"
 #include "MagicEntity.generated.h"
 
 UCLASS()
@@ -30,6 +31,12 @@ public:
 
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Components")
 	UOSStatusEffectComponent* StatusComponent;
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Noise")
+	EOSNoiseLevel NoiseLevel = EOSNoiseLevel::Noisy;
+
+	UFUNCTION(BlueprintCallable, Category = "Noise")
+	void MakeOSNoise(EOSNoiseLevel OverrideLevel = EOSNoiseLevel::Silent);
 
 protected:
 	// Called when the game starts or when spawned

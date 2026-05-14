@@ -434,11 +434,11 @@ void AOSMapGenerator::SpawnRoomActors()
 	int baseChance = 0;
 
 	TSet<UClass*> SpawnedUniqueItems;
-	TArray<FOSItemAvailable*> FloorItemRows;
+	TArray<FOSItemData*> FloorItemRows;
 	if (CurrentFloorConfig && CurrentFloorConfig->ItemsPool)
 	{
 		FString ContextString;
-		CurrentFloorConfig->ItemsPool->GetAllRows<FOSItemAvailable>(ContextString, FloorItemRows);
+		CurrentFloorConfig->ItemsPool->GetAllRows<FOSItemData>(ContextString, FloorItemRows);
 	}
 
 	for (auto& Elem : RoomGrid)

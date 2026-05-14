@@ -2,6 +2,7 @@
 
 
 #include "Item.h"
+#include "OmittedSanctum/UI/OSItemBoxWidget.h"
 
 // Sets default values
 AItem::AItem()
@@ -10,6 +11,9 @@ AItem::AItem()
 	PrimaryActorTick.bCanEverTick = true;
 
 	USceneComponent* Root = CreateDefaultSubobject<USceneComponent>(TEXT("Root"));
+
+	Widget = CreateDefaultSubobject<UWidgetComponent>(TEXT("ItemBox"));
+	Widget->SetupAttachment(Root);
 
 	InteractionTrigger = CreateDefaultSubobject<USphereComponent>(TEXT("InteractionTrigger"));
 	InteractionTrigger->SetupAttachment(Root);
@@ -20,7 +24,19 @@ AItem::AItem()
 void AItem::BeginPlay()
 {
 	Super::BeginPlay();
+}
 	
+void AItem::SetItemData(FOSItemData data)
+{
+	ItemData = data;
+
+	UOSItemBoxWidget *box = Cast<UOSItemBoxWidget>(Widget->GetWidget());
+	box->UpdateInfoBox(ItemData.ItemName, ItemData.Description);
+}
+
+FOSItemData AItem::GetItemData()
+{
+	return ItemData;
 }
 
 // Called every frame

@@ -3,7 +3,7 @@
 
 #include "MagicBall.h"
 #include "Kismet/KismetSystemLibrary.h"
-#include "OmittedSanctum/OSEnemy.h"
+#include "OmittedSanctum/Enemies/OSEnemy.h"
 
 AMagicBall::AMagicBall()
 {
@@ -46,5 +46,7 @@ void AMagicBall::OnOverlapBegin(UPrimitiveComponent* OverlappedComp, AActor* Oth
 		if(HitEnemy)
 			HitEnemy->ApplyMagicDamage(Element.name, Damage, Element.CanApplyOnHit, EffectDuration);
 	}
+
+	MakeOSNoise(NoiseLevel);
 	Destroy();
 }

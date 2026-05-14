@@ -2,7 +2,7 @@
 
 
 #include "MagicTrap.h"
-#include "OmittedSanctum/OSEnemy.h"
+#include "OmittedSanctum/Enemies/OSEnemy.h"
 
 AMagicTrap::AMagicTrap()
 {

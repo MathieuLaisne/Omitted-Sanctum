@@ -4,9 +4,9 @@
 
 #include "CoreMinimal.h"
 #include "GameFramework/Character.h"
-#include "MagicSystem/MagicEntity.h"
-#include "MagicSystem/OSMagicResistanceComponent.h"
-#include "MagicSystem/OSStatusEffectComponent.h"
+#include "OmittedSanctum/MagicSystem/MagicEntity.h"
+#include "OmittedSanctum/MagicSystem/OSMagicResistanceComponent.h"
+#include "OmittedSanctum/MagicSystem/OSStatusEffectComponent.h"
 #include "OSEnemy.generated.h"
 
 UCLASS()
@@ -40,11 +40,20 @@ public:
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Enemy")
 	float AttackSpeed;
 
-	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Components")
-	UOSMagicResistanceComponent* ResistanceComponent;
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Enemy/Noise")
+	EOSNoiseLevel HitNoiseLevel = EOSNoiseLevel::Noisy;
 
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Enemy/Noise")
+	EOSNoiseLevel AttackingNoiseLevel = EOSNoiseLevel::Noisy;
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Enemy/Noise")
+	EOSNoiseLevel DeathNoiseLevel = EOSNoiseLevel::Noisy;
+	
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Components")
 	UOSStatusEffectComponent* StatusComponent;
+
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Components")
+	UOSMagicResistanceComponent* ResistanceComponent;
 
 	UFUNCTION(BlueprintCallable)
 	void Damage(int amount);
@@ -60,5 +69,8 @@ public:
 	
 	UFUNCTION(BlueprintNativeEvent, BlueprintCallable)
 	void Attack();
+
+	UFUNCTION(BlueprintCallable, Category = "Enemy/Noise")
+	void MakeOSNoise(EOSNoiseLevel Level);
 
 };

@@ -45,7 +45,7 @@ public:
   FRoomPosition PlayerPosition;
 
   UPROPERTY(VisibleAnywhere, Category = "Player")
-  TArray<FSaveItem> InventoryItems;
+  TArray<FOSItemData> InventoryItems;
 
   UPROPERTY(VisibleAnywhere, Category = "Magic")
   TArray<FOSMagicSpell> RecordedSpells;

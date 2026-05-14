@@ -5,7 +5,7 @@
 #include "NavAreas/NavArea_Obstacle.h"
 #include "NavAreas/NavArea_Null.h"
 #include "Components/StaticMeshComponent.h"
-#include "OmittedSanctum/OSEnemy.h"
+#include "OmittedSanctum/Enemies/OSEnemy.h"
 
 
 AMagicWall::AMagicWall()

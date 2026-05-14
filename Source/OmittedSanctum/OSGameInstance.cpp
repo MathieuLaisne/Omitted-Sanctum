@@ -78,6 +78,7 @@ void UOSGameInstance::CreateNewRun()
     NewFloor.FloorSeed = FMath::Rand();
 
     CurrentSaveGame->RecordedSpells.Empty();
+    CurrentSaveGame->InventoryItems.Empty();
 
     // Look up base stats from DataTable
     if (ClassDataTable)
@@ -228,8 +229,8 @@ FOSRoomPossibleNeighbour UOSGameInstance::GetRoomDoors(FRoomPosition Pos)
 bool UOSGameInstance::HasGrimoire()
 {
   // Search the combined inventory (Meta unlocks + current run items)
-  TArray<FSaveItem> Inventory = GetInventory();
-  for (const FSaveItem& Item : Inventory)
+  TArray<FOSItemData> Inventory = GetInventory();
+  for (const FOSItemData& Item : Inventory)
   {
     if (Item.ItemName.Equals(TEXT("Grimoire"), ESearchCase::IgnoreCase))
     {
@@ -310,14 +311,14 @@ bool UOSGameInstance::PurchaseShopItem(EOSPlayerClass ClassType, FName ItemRowNa
   if (!ShopDataTable) return false;
 
   // 1. Find the Item Data
-  FOSShopItem* ShopItem = ShopDataTable->FindRow<FOSShopItem>(ItemRowName, TEXT("ShopPurchase"));
+  FOSItemData* ShopItem = ShopDataTable->FindRow<FOSItemData>(ItemRowName, TEXT("ShopPurchase"));
   if (!ShopItem) return false;
 
   // 2. Get Player Progress
   FOSClassMetaProgress& Progress = CurrentSaveGame->GetProgressFor(ClassType);
 
   // 3. Check specific conditions
-  if (Progress.UnlockedItemIDs.Contains(FSaveItem(ShopItem->ItemName, ShopItem->ItemType)))
+  if (Progress.UnlockedItemIDs.Contains(*ShopItem))
   {
     return false; // Already unlocked this unique item
   }
@@ -328,7 +329,7 @@ bool UOSGameInstance::PurchaseShopItem(EOSPlayerClass ClassType, FName ItemRowNa
     // Transaction
     Progress.MetaCurrency -= ShopItem->Price;
 
-    Progress.UnlockedItemIDs.Add(FSaveItem(ShopItem->ItemName, ShopItem->ItemType));
+    Progress.UnlockedItemIDs.Add(*ShopItem);
 
     SaveCurrentRun(); // Save immediately
     return true;
@@ -337,7 +338,7 @@ bool UOSGameInstance::PurchaseShopItem(EOSPlayerClass ClassType, FName ItemRowNa
   return false; // Not enough cash
 }
 
-bool UOSGameInstance::IsItemUnlocked(EOSPlayerClass ClassType, FSaveItem Item)
+bool UOSGameInstance::IsItemUnlocked(EOSPlayerClass ClassType, FOSItemData Item)
 {
   if (CurrentSaveGame)
   {
@@ -346,9 +347,26 @@ bool UOSGameInstance::IsItemUnlocked(EOSPlayerClass ClassType, FSaveItem Item)
   return false;
 }
 
-TArray<FSaveItem> UOSGameInstance::GetInventory()
+TArray<FOSItemData> UOSGameInstance::GetInventory()
 {
-  TArray<FSaveItem> Inventory = CurrentSaveGame->GetProgressFor(CurrentSelectedClass).UnlockedItemIDs;
+  TArray<FOSItemData> Inventory = CurrentSaveGame->GetProgressFor(CurrentSelectedClass).UnlockedItemIDs;
   Inventory.Append(CurrentSaveGame->InventoryItems);
   return Inventory;
+}
+
+void UOSGameInstance::PickedItem(FOSItemData itemData)
+{
+  if (CurrentSaveGame->InventoryItems.Contains(itemData))
+  {
+    int32 existingIDX = CurrentSaveGame->InventoryItems.Find(itemData);
+    CurrentSaveGame->InventoryItems[existingIDX].Amount += itemData.Amount;
+  }
+  else
+    CurrentSaveGame->InventoryItems.Add(itemData);
+  SaveCurrentRun();
+}
+
+void UOSGameInstance::BroadcastNoise(AActor* NoiseMaker, const FVector& Location, EOSNoiseLevel NoiseLevel)
+{
+	OnNoiseMade.Broadcast(NoiseMaker, Location, NoiseLevel);
 }
